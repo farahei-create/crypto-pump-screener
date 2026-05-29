@@ -7,19 +7,18 @@ load_dotenv()
 
 app = Flask(__name__)
 
-# Config from config.py
-MIN_PRICE_CHANGE_1H = 12.0
-MIN_LIQUIDITY = 30000
-MAX_RESULTS = 15
-
-exchange = ccxt.binance({
-    'apiKey': os.getenv('BINANCE_API_KEY', ''),
-    'secret': os.getenv('BINANCE_SECRET', ''),
-    'enableRateLimit': True,
-})
+MIN_PRICE_CHANGE_1H = float(os.getenv('MIN_PRICE_CHANGE_1H', 12.0))
+MIN_LIQUIDITY = float(os.getenv('MIN_LIQUIDITY', 30000))
+MAX_RESULTS = int(os.getenv('MAX_RESULTS', 15))
 
 def get_potential_pumps():
     try:
+        exchange = ccxt.binance({
+            'apiKey': os.getenv('BINANCE_API_KEY', ''),
+            'secret': os.getenv('BINANCE_SECRET', ''),
+            'enableRateLimit': True,
+        })
+        
         tickers = exchange.fetch_tickers()
         pumps = []
         
@@ -32,14 +31,15 @@ def get_potential_pumps():
                     pumps.append({
                         'symbol': symbol,
                         'change_1h': round(change_1h, 2),
-                        'volume': round(volume, 0),
+                        'volume': round(volume),
                         'price': ticker['last']
                     })
         
         pumps = sorted(pumps, key=lambda x: x['change_1h'], reverse=True)[:MAX_RESULTS]
         return pumps
     except Exception as e:
-        return [{'error': str(e)}]
+        print(f"Error fetching data: {e}")
+        return [{'error': 'Unable to fetch data from Binance. Please try again later.'}]
 
 @app.route('/')
 def dashboard():

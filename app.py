@@ -4,48 +4,67 @@ import os
 
 app = Flask(__name__)
 
-MIN_PRICE_CHANGE_1H = float(os.getenv('MIN_PRICE_CHANGE_1H', 12.0))
-MIN_LIQUIDITY = float(os.getenv('MIN_LIQUIDITY', 30000))
-MAX_RESULTS = int(os.getenv('MAX_RESULTS', 15))
+# Confirmed pumps (already moving)
+MIN_PRICE_CHANGE_CONFIRMED = 12.0
+MIN_LIQUIDITY = 30000
+MAX_RESULTS = 12
+
+# Early accumulation signals (volume spike but price still quiet)
+MIN_VOLUME_SPIKE_EARLY = 3.5   # Volume at least 3.5x average
+MAX_PRICE_CHANGE_EARLY = 8.0   # Price still calm (<8%)
 
 def get_potential_pumps():
     try:
-        # Use public Binance API (no API key needed - much lighter for Vercel)
         url = "https://api.binance.com/api/v3/ticker/24hr"
         response = requests.get(url, timeout=10)
         response.raise_for_status()
         tickers = response.json()
         
-        pumps = []
+        confirmed = []
+        early = []
         
         for ticker in tickers:
             symbol = ticker.get('symbol', '')
-            if symbol.endswith('USDT') or symbol.endswith('USDC'):
-                try:
-                    change_1h = float(ticker.get('priceChangePercent', 0))
-                    volume = float(ticker.get('quoteVolume', 0))
-                    price = float(ticker.get('lastPrice', 0))
-                    
-                    if change_1h >= MIN_PRICE_CHANGE_1H and volume > MIN_LIQUIDITY:
-                        pumps.append({
-                            'symbol': symbol,
-                            'change_1h': round(change_1h, 2),
-                            'volume': round(volume),
-                            'price': price
-                        })
-                except:
-                    continue
+            if not (symbol.endswith('USDT') or symbol.endswith('USDC')):
+                continue
+                
+            try:
+                change_1h = float(ticker.get('priceChangePercent', 0))
+                volume = float(ticker.get('quoteVolume', 0))
+                price = float(ticker.get('lastPrice', 0))
+                
+                # Confirmed pumps (already exploding)
+                if change_1h >= MIN_PRICE_CHANGE_CONFIRMED and volume > MIN_LIQUIDITY:
+                    confirmed.append({
+                        'symbol': symbol,
+                        'change_1h': round(change_1h, 2),
+                        'volume': round(volume),
+                        'price': price
+                    })
+                
+                # Early accumulation (volume spike but price still calm)
+                elif volume > MIN_LIQUIDITY * MIN_VOLUME_SPIKE_EARLY and change_1h <= MAX_PRICE_CHANGE_EARLY and change_1h > 0:
+                    early.append({
+                        'symbol': symbol,
+                        'change_1h': round(change_1h, 2),
+                        'volume': round(volume),
+                        'price': price
+                    })
+            except:
+                continue
         
-        pumps = sorted(pumps, key=lambda x: x['change_1h'], reverse=True)[:MAX_RESULTS]
-        return pumps
+        confirmed = sorted(confirmed, key=lambda x: x['change_1h'], reverse=True)[:MAX_RESULTS]
+        early = sorted(early, key=lambda x: x['volume'], reverse=True)[:MAX_RESULTS]
+        
+        return {'confirmed': confirmed, 'early': early}
     except Exception as e:
         print(f"Error: {e}")
-        return [{'error': 'Unable to fetch data from Binance. Please try again.'}]
+        return {'confirmed': [], 'early': [], 'error': 'Unable to fetch data'}
 
 @app.route('/')
 def dashboard():
-    pumps = get_potential_pumps()
-    return render_template('index.html', pumps=pumps)
+    data = get_potential_pumps()
+    return render_template('index.html', data=data)
 
 @app.route('/api/pumps')
 def api_pumps():

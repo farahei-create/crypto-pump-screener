@@ -3,122 +3,330 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>🚀 Pump Screener - Connecté à Binance</title>
+    <title>🚀 Pump Screener</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <style>
+        .pump-row { transition: all 0.2s ease; }
+        .pump-row:hover { transform: translateX(3px); }
+        .star { transition: transform 0.2s ease; }
+        .star:hover { transform: scale(1.3); }
+        .strong-pump { background: linear-gradient(90deg, rgba(16,185,129,0.06) 0%, transparent 100%); }
+    </style>
 </head>
 <body class="bg-zinc-950 text-white">
     <div class="max-w-6xl mx-auto px-6 py-8">
-        <div class="flex items-center justify-between mb-6">
-            <div class="flex items-center gap-x-3">
-                <div class="w-10 h-10 bg-emerald-500 rounded-2xl flex items-center justify-center">
-                    <i class="fas fa-rocket"></i>
+        <!-- Header -->
+        <div class="flex flex-col md:flex-row md:items-center justify-between gap-y-4 mb-8">
+            <div class="flex items-center gap-x-4">
+                <div class="w-11 h-11 bg-gradient-to-br from-emerald-500 to-teal-400 rounded-2xl flex items-center justify-center shadow-xl shadow-emerald-500/40">
+                    <i class="fas fa-rocket text-white text-2xl"></i>
                 </div>
                 <div>
-                    <h1 class="text-3xl font-bold">Pump Screener</h1>
-                    <p class="text-xs text-emerald-400 flex items-center gap-x-1">
-                        <span class="w-2 h-2 bg-emerald-400 rounded-full animate-pulse"></span>
-                        Connecté à Binance API
-                    </p>
+                    <h1 class="text-4xl font-bold tracking-[-2px]">Pump Screener</h1>
+                    <p class="text-zinc-400 -mt-1 text-sm">Binance • Early Detection</p>
                 </div>
             </div>
-            <div class="text-right">
-                <div class="text-xs text-zinc-500">Dernière mise à jour</div>
-                <div class="font-mono text-emerald-400">{{ data.last_update }}</div>
+            
+            <div class="flex items-center gap-x-3">
+                <button onclick="refreshData()" class="px-5 py-2.5 bg-zinc-900 hover:bg-zinc-800 active:bg-zinc-700 border border-zinc-700 rounded-3xl text-sm flex items-center gap-x-2 transition-all active:scale-[0.98]">
+                    <i class="fas fa-sync-alt"></i>
+                    <span class="font-medium">Refresh</span>
+                </button>
+                
+                <div class="flex items-center bg-zinc-900 border border-zinc-700 rounded-3xl px-3 py-2 text-xs">
+                    <div class="flex items-center gap-x-2">
+                        <div class="w-2 h-2 bg-emerald-400 rounded-full animate-pulse"></div>
+                        <span class="font-mono text-emerald-400">LIVE</span>
+                    </div>
+                </div>
             </div>
         </div>
 
-        <!-- Today's Big Movers -->
-        {% if data.today_big %}
-        <div class="mb-8">
-            <div class="flex items-center gap-x-2 mb-3">
-                <span class="text-blue-400">●</span>
-                <span class="font-semibold">TODAY'S BIG MOVERS (24h)</span>
-                <span class="text-xs text-zinc-500">({{ data.today_big|length }} paires)</span>
+        <!-- Controls -->
+        <div class="flex flex-col md:flex-row gap-4 mb-6">
+            <div class="flex-1 relative">
+                <div class="absolute left-4 top-3.5 text-zinc-500"><i class="fas fa-search"></i></div>
+                <input type="text" id="search-input" placeholder="Rechercher une paire..." 
+                       class="w-full bg-zinc-900 border border-zinc-700 focus:border-emerald-500 pl-11 py-3 rounded-3xl text-sm outline-none" onkeyup="filterPairs()">
             </div>
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
-                {% for pump in data.today_big %}
-                <div class="bg-zinc-900 border border-zinc-700 rounded-2xl p-4 flex items-center justify-between hover:border-blue-500/50 transition-colors">
-                    <div>
-                        <div class="font-mono font-semibold">{{ pump.symbol }}</div>
-                        <div class="text-xs text-zinc-400">${{ "{:,}".format(pump.volume|int) }} vol</div>
-                    </div>
-                    <div class="text-right">
-                        <div class="text-xl font-semibold text-blue-400">+{{ pump.change_24h }}%</div>
-                        <a href="https://www.binance.com/en/trade/{{ pump.symbol }}?layout=pro" target="_blank" class="text-xs text-zinc-400 hover:text-white">Trade →</a>
+            
+            <div class="flex bg-zinc-900 border border-zinc-700 rounded-3xl p-1 text-sm">
+                <button onclick="filterByType('all')" id="filter-all" class="px-5 py-2 rounded-[20px] font-medium transition-colors bg-white text-black">All</button>
+                <button onclick="filterByType('early')" id="filter-early" class="px-5 py-2 rounded-[20px] text-amber-400 hover:bg-zinc-800 transition-colors">Early</button>
+                <button onclick="filterByType('confirmed')" id="filter-confirmed" class="px-5 py-2 rounded-[20px] text-emerald-400 hover:bg-zinc-800 transition-colors">Confirmed</button>
+            </div>
+        </div>
+
+        <!-- Stats -->
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+            <div class="bg-zinc-900 border border-zinc-800 rounded-3xl p-5">
+                <div class="text-zinc-400 text-xs mb-1">EARLY SIGNALS</div>
+                <div class="text-4xl font-semibold text-amber-400">{{ data.early|length }}</div>
+            </div>
+            <div class="bg-zinc-900 border border-zinc-800 rounded-3xl p-5">
+                <div class="text-zinc-400 text-xs mb-1">CONFIRMED</div>
+                <div class="text-4xl font-semibold text-emerald-400">{{ data.confirmed|length }}</div>
+            </div>
+            <div class="bg-zinc-900 border border-zinc-800 rounded-3xl p-5">
+                <div class="text-zinc-400 text-xs mb-1">TODAY'S BIG MOVERS</div>
+                <div class="text-4xl font-semibold text-blue-400">{{ data.today_big|length }}</div>
+            </div>
+            <div class="bg-zinc-900 border border-zinc-800 rounded-3xl p-5 flex items-center">
+                <div>
+                    <div class="text-[10px] text-zinc-500">NEXT REFRESH</div>
+                    <div class="flex items-baseline gap-x-1">
+                        <span class="text-3xl font-semibold text-emerald-400" id="countdown">45</span>
+                        <span class="text-xs text-zinc-400">sec</span>
                     </div>
                 </div>
-                {% endfor %}
+            </div>
+        </div>
+
+        <!-- Today's Big Movers (NEW) -->
+        {% if data.today_big %}
+        <div class="mb-10">
+            <div class="flex items-center gap-x-3 mb-4 px-1">
+                <div class="px-4 py-1.5 bg-blue-500/10 text-blue-400 text-xs font-semibold rounded-3xl flex items-center gap-x-2">
+                    <i class="fas fa-chart-line"></i>
+                    <span>TODAY'S BIG MOVERS (24h)</span>
+                </div>
+                <span class="text-xs text-zinc-500">Les plus gros pumps de la journée (dont ALLO)</span>
+            </div>
+            
+            <div class="bg-zinc-900 border border-zinc-800 rounded-3xl overflow-hidden">
+                <table class="w-full">
+                    <thead>
+                        <tr class="border-b border-zinc-800 text-xs text-zinc-400">
+                            <th class="px-6 py-4 font-normal">Paire</th>
+                            <th class="px-6 py-4 font-normal text-right">Hausse 24h</th>
+                            <th class="px-6 py-4 font-normal text-right">Volume</th>
+                            <th class="px-6 py-4 font-normal text-right">Prix</th>
+                            <th class="px-6 py-4 font-normal w-16"></th>
+                        </tr>
+                    </thead>
+                    <tbody class="text-sm divide-y divide-zinc-800">
+                        {% for pump in data.today_big %}
+                        <tr class="pump-row hover:bg-zinc-800/50" data-symbol="{{ pump.symbol }}">
+                            <td class="px-6 py-4 font-mono font-semibold">{{ pump.symbol }}</td>
+                            <td class="px-6 py-4 text-right">
+                                <span class="px-3.5 py-1 rounded-2xl text-xs font-semibold bg-blue-500/10 text-blue-400">+{{ pump.change_24h }}%</span>
+                            </td>
+                            <td class="px-6 py-4 text-right font-mono text-zinc-300">${{ "{:,}".format(pump.volume|int) }}</td>
+                            <td class="px-6 py-4 text-right font-mono text-zinc-300">{{ pump.price }}</td>
+                            <td class="px-6 py-4">
+                                <a href="https://www.binance.com/en/trade/{{ pump.symbol }}?layout=pro" target="_blank" class="text-zinc-400 hover:text-white transition-colors">
+                                    <i class="fas fa-external-link-alt"></i>
+                                </a>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
             </div>
         </div>
         {% endif %}
 
-        <!-- Early + Confirmed -->
-        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <!-- Early Accumulation -->
-            <div>
-                <div class="flex items-center gap-x-2 mb-3">
-                    <span class="text-amber-400">●</span>
-                    <span class="font-semibold">EARLY ACCUMULATION</span>
-                </div>
-                <div class="bg-zinc-900 border border-zinc-700 rounded-2xl overflow-hidden">
-                    {% if data.early %}
-                    {% for pump in data.early[:6] %}
-                    <div class="px-4 py-3 border-b border-zinc-700 last:border-0 flex items-center justify-between hover:bg-zinc-800/50">
-                        <div class="font-mono">{{ pump.symbol }}</div>
-                        <div class="flex items-center gap-x-3">
-                            <span class="text-amber-400 font-semibold">+{{ pump.change_1h }}%</span>
-                            <a href="https://www.binance.com/en/trade/{{ pump.symbol }}?layout=pro" target="_blank" class="text-xs px-3 py-1 bg-white text-black rounded-2xl">Trade</a>
-                        </div>
+        <!-- Early Accumulation -->
+        <div class="mb-10" id="early-section">
+            <div class="flex items-center justify-between mb-4 px-1">
+                <div class="flex items-center gap-x-3">
+                    <div class="px-4 py-1.5 bg-amber-500/10 text-amber-400 text-xs font-semibold rounded-3xl flex items-center gap-x-2">
+                        <i class="fas fa-search"></i>
+                        <span>EARLY ACCUMULATION</span>
                     </div>
-                    {% endfor %}
-                    {% else %}
-                    <div class="px-4 py-8 text-center text-zinc-400 text-sm">Aucun signal pour le moment</div>
-                    {% endif %}
+                    <span class="text-xs text-zinc-500">Volume fort + prix calme</span>
                 </div>
             </div>
-
-            <!-- Confirmed Pumps -->
-            <div>
-                <div class="flex items-center gap-x-2 mb-3">
-                    <span class="text-emerald-400">●</span>
-                    <span class="font-semibold">CONFIRMED PUMPS</span>
-                </div>
-                <div class="bg-zinc-900 border border-zinc-700 rounded-2xl overflow-hidden">
-                    {% if data.confirmed %}
-                    {% for pump in data.confirmed[:6] %}
-                    <div class="px-4 py-3 border-b border-zinc-700 last:border-0 flex items-center justify-between hover:bg-zinc-800/50">
-                        <div class="font-mono">{{ pump.symbol }}</div>
-                        <div class="flex items-center gap-x-3">
-                            <span class="text-emerald-400 font-semibold">+{{ pump.change_1h }}%</span>
-                            <a href="https://www.binance.com/en/trade/{{ pump.symbol }}?layout=pro" target="_blank" class="text-xs px-3 py-1 bg-white text-black rounded-2xl">Trade</a>
-                        </div>
-                    </div>
-                    {% endfor %}
-                    {% else %}
-                    <div class="px-4 py-8 text-center text-zinc-400 text-sm">Aucun pump confirmé pour le moment</div>
-                    {% endif %}
-                </div>
+            
+            <div class="bg-zinc-900 border border-zinc-800 rounded-3xl overflow-hidden">
+                {% if data.early %}
+                <table class="w-full" id="early-table">
+                    <thead>
+                        <tr class="border-b border-zinc-800 text-xs text-zinc-400">
+                            <th class="px-6 py-4 w-8"></th>
+                            <th class="px-6 py-4 font-normal">Paire</th>
+                            <th class="px-6 py-4 font-normal text-right">Hausse</th>
+                            <th class="px-6 py-4 font-normal text-right">Volume</th>
+                            <th class="px-6 py-4 font-normal text-right">Prix</th>
+                            <th class="px-6 py-4 font-normal w-16"></th>
+                        </tr>
+                    </thead>
+                    <tbody class="text-sm divide-y divide-zinc-800">
+                        {% for pump in data.early %}
+                        <tr class="pump-row hover:bg-zinc-800/50" data-symbol="{{ pump.symbol }}" data-type="early">
+                            <td class="px-4 py-4">
+                                <i class="fas fa-star star text-zinc-600 hover:text-amber-400 cursor-pointer" onclick="toggleFavorite('{{ pump.symbol }}', this)"></i>
+                            </td>
+                            <td class="px-6 py-4 font-mono font-semibold">{{ pump.symbol }}</td>
+                            <td class="px-6 py-4 text-right">
+                                <span class="px-3.5 py-1 rounded-2xl text-xs font-semibold bg-amber-500/10 text-amber-400">+{{ pump.change_1h }}%</span>
+                            </td>
+                            <td class="px-6 py-4 text-right font-mono text-zinc-300">${{ "{:,}".format(pump.volume|int) }}</td>
+                            <td class="px-6 py-4 text-right font-mono text-zinc-300">{{ pump.price }}</td>
+                            <td class="px-6 py-4">
+                                <a href="https://www.binance.com/en/trade/{{ pump.symbol }}?layout=pro" target="_blank" class="text-zinc-400 hover:text-white transition-colors">
+                                    <i class="fas fa-external-link-alt"></i>
+                                </a>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+                {% else %}
+                <div class="px-6 py-9 text-center text-zinc-400 text-sm">Aucun signal d'accumulation pour le moment</div>
+                {% endif %}
             </div>
         </div>
 
-        <div class="mt-8 text-center">
-            <button onclick="refreshData()" class="px-6 py-2 bg-zinc-800 hover:bg-zinc-700 rounded-2xl text-sm flex items-center gap-x-2 mx-auto transition-colors">
-                <i class="fas fa-sync-alt"></i>
-                <span>Refresh maintenant</span>
-            </button>
-            <div class="text-[10px] text-zinc-500 mt-3">Données en temps réel depuis l'API Binance publique</div>
+        <!-- Confirmed Pumps -->
+        <div id="confirmed-section">
+            <div class="flex items-center justify-between mb-4 px-1">
+                <div class="flex items-center gap-x-3">
+                    <div class="px-4 py-1.5 bg-emerald-500/10 text-emerald-400 text-xs font-semibold rounded-3xl flex items-center gap-x-2">
+                        <i class="fas fa-bolt"></i>
+                        <span>CONFIRMED PUMPS</span>
+                    </div>
+                    <span class="text-xs text-zinc-500">Déjà en mouvement</span>
+                </div>
+            </div>
+            
+            <div class="bg-zinc-900 border border-zinc-800 rounded-3xl overflow-hidden">
+                {% if data.confirmed %}
+                <table class="w-full" id="confirmed-table">
+                    <thead>
+                        <tr class="border-b border-zinc-800 text-xs text-zinc-400">
+                            <th class="px-6 py-4 w-8"></th>
+                            <th class="px-6 py-4 font-normal">Paire</th>
+                            <th class="px-6 py-4 font-normal text-right">Hausse</th>
+                            <th class="px-6 py-4 font-normal text-right">Volume</th>
+                            <th class="px-6 py-4 font-normal text-right">Prix</th>
+                            <th class="px-6 py-4 font-normal w-16"></th>
+                        </tr>
+                    </thead>
+                    <tbody class="text-sm divide-y divide-zinc-800">
+                        {% for pump in data.confirmed %}
+                        <tr class="pump-row hover:bg-zinc-800/50 {% if pump.change_1h > 25 %}strong-pump{% endif %}" data-symbol="{{ pump.symbol }}" data-type="confirmed">
+                            <td class="px-4 py-4">
+                                <i class="fas fa-star star text-zinc-600 hover:text-amber-400 cursor-pointer" onclick="toggleFavorite('{{ pump.symbol }}', this)"></i>
+                            </td>
+                            <td class="px-6 py-4 font-mono font-semibold">{{ pump.symbol }}</td>
+                            <td class="px-6 py-4 text-right">
+                                <span class="px-3.5 py-1 rounded-2xl text-xs font-semibold {% if pump.change_1h > 25 %}bg-emerald-500 text-white{% else %}bg-emerald-500/10 text-emerald-400{% endif %}">+{{ pump.change_1h }}%</span>
+                            </td>
+                            <td class="px-6 py-4 text-right font-mono text-zinc-300">${{ "{:,}".format(pump.volume|int) }}</td>
+                            <td class="px-6 py-4 text-right font-mono text-zinc-300">{{ pump.price }}</td>
+                            <td class="px-6 py-4">
+                                <a href="https://www.binance.com/en/trade/{{ pump.symbol }}?layout=pro" target="_blank" class="text-zinc-400 hover:text-white transition-colors">
+                                    <i class="fas fa-external-link-alt"></i>
+                                </a>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+                {% else %}
+                <div class="px-6 py-9 text-center text-zinc-400 text-sm">Aucun pump confirmé pour le moment</div>
+                {% endif %}
+            </div>
+        </div>
+
+        <div class="mt-6 text-center text-[10px] text-zinc-500">
+            Appuie sur <span class="font-mono bg-zinc-900 px-1.5 py-0.5 rounded">R</span> pour rafraîchir • Données Binance
         </div>
     </div>
 
     <script>
+        let favorites = JSON.parse(localStorage.getItem('pumpFavorites') || '[]');
+        
+        function toggleFavorite(symbol, element) {
+            if (favorites.includes(symbol)) {
+                favorites = favorites.filter(s => s !== symbol);
+                element.classList.remove('text-amber-400');
+                element.classList.add('text-zinc-600');
+            } else {
+                favorites.push(symbol);
+                element.classList.add('text-amber-400');
+                element.classList.remove('text-zinc-600');
+            }
+            localStorage.setItem('pumpFavorites', JSON.stringify(favorites));
+        }
+        
+        function updateFavorites() {
+            document.querySelectorAll('.star').forEach(star => {
+                const symbol = star.closest('tr').dataset.symbol;
+                if (favorites.includes(symbol)) {
+                    star.classList.add('text-amber-400');
+                    star.classList.remove('text-zinc-600');
+                }
+            });
+        }
+        
+        function updateLastScan() {
+            const now = new Date();
+            document.getElementById('last-scan').textContent = now.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+        }
+        
+        let countdown = 45;
+        const countdownEl = document.getElementById('countdown');
+        
+        function startCountdown() {
+            const interval = setInterval(() => {
+                countdown--;
+                if (countdownEl) countdownEl.textContent = countdown;
+                if (countdown <= 0) {
+                    clearInterval(interval);
+                    window.location.reload();
+                }
+            }, 1000);
+        }
+        
         function refreshData() {
             window.location.reload();
         }
         
-        setTimeout(() => {
-            window.location.reload();
-        }, 45000);
+        function filterPairs() {
+            const term = document.getElementById('search-input').value.toUpperCase().trim();
+            document.querySelectorAll('.pump-row').forEach(row => {
+                const symbol = row.dataset.symbol || '';
+                if (symbol.toUpperCase().includes(term)) {
+                    row.style.display = '';
+                } else {
+                    row.style.display = 'none';
+                }
+            });
+        }
+        
+        let currentFilter = 'all';
+        function filterByType(type) {
+            currentFilter = type;
+            document.querySelectorAll('[id^="filter-"]').forEach(b => b.classList.remove('bg-white', 'text-black'));
+            const btn = document.getElementById('filter-' + type);
+            if (btn) btn.classList.add('bg-white', 'text-black');
+            
+            const early = document.getElementById('early-section');
+            const confirmed = document.getElementById('confirmed-section');
+            
+            if (type === 'all') { early.style.display = ''; confirmed.style.display = ''; }
+            else if (type === 'early') { early.style.display = ''; confirmed.style.display = 'none'; }
+            else if (type === 'confirmed') { early.style.display = 'none'; confirmed.style.display = ''; }
+        }
+        
+        window.onload = function() {
+            updateLastScan();
+            startCountdown();
+            updateFavorites();
+            
+            const allBtn = document.getElementById('filter-all');
+            if (allBtn) allBtn.classList.add('bg-white', 'text-black');
+            
+            document.addEventListener('keydown', e => {
+                if ((e.key === 'r' || e.key === 'R') && document.activeElement.tagName !== 'INPUT') {
+                    e.preventDefault();
+                    refreshData();
+                }
+            });
+        };
     </script>
 </body>
 </html>

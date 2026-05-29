@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🚀 Crypto Pump Screener</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+</head>
+<body class="bg-zinc-950 text-white">
+    <div class="max-w-6xl mx-auto px-6 py-8">
+        <!-- Header -->
+        <div class="flex items-center justify-between mb-8">
+            <div class="flex items-center gap-x-3">
+                <div class="w-10 h-10 bg-emerald-500 rounded-2xl flex items-center justify-center">
+                    <i class="fas fa-rocket text-white text-2xl"></i>
+                </div>
+                <div>
+                    <h1 class="text-3xl font-bold tracking-tighter">Crypto Pump Screener</h1>
+                    <p class="text-zinc-400 text-sm">Binance • Scalping & Daytrading</p>
+                </div>
+            </div>
+            <div class="flex items-center gap-x-3">
+                <button onclick="refreshData()" 
+                        class="flex items-center gap-x-2 px-4 py-2 bg-zinc-900 hover:bg-zinc-800 border border-zinc-700 rounded-2xl text-sm transition-colors">
+                    <i class="fas fa-sync-alt"></i>
+                    <span>Refresh</span>
+                </button>
+                <div class="px-3 py-1 bg-emerald-500/10 text-emerald-400 text-xs font-mono rounded-2xl flex items-center gap-x-1">
+                    <div class="w-2 h-2 bg-emerald-400 rounded-full animate-pulse"></div>
+                    LIVE
+                </div>
+            </div>
+        </div>
+
+        <!-- Stats -->
+        <div class="grid grid-cols-3 gap-4 mb-8">
+            <div class="bg-zinc-900 border border-zinc-800 rounded-3xl p-5">
+                <div class="text-zinc-400 text-sm mb-1">Pumps détectés</div>
+                <div class="text-4xl font-semibold">{{ pumps|length }}</div>
+            </div>
+            <div class="bg-zinc-900 border border-zinc-800 rounded-3xl p-5">
+                <div class="text-zinc-400 text-sm mb-1">Meilleure hausse</div>
+                <div class="text-4xl font-semibold text-emerald-400">+{{ pumps[0].change_1h if pumps else 0 }}%</div>
+            </div>
+            <div class="bg-zinc-900 border border-zinc-800 rounded-3xl p-5">
+                <div class="text-zinc-400 text-sm mb-1">Dernier scan</div>
+                <div class="text-xl font-mono">{{ now }}</div>
+            </div>
+        </div>
+
+        <!-- Pumps Table -->
+        <div class="bg-zinc-900 border border-zinc-800 rounded-3xl overflow-hidden">
+            <div class="px-6 py-4 border-b border-zinc-800 flex items-center justify-between">
+                <div class="font-semibold">Top Candidates</div>
+                <div class="text-xs text-zinc-500">Mise à jour automatique toutes les 45s</div>
+            </div>
+            
+            {% if pumps and not pumps[0].error %}
+            <table class="w-full">
+                <thead>
+                    <tr class="border-b border-zinc-800 text-left text-xs text-zinc-400">
+                        <th class="px-6 py-3 font-normal">Paire</th>
+                        <th class="px-6 py-3 font-normal text-right">Hausse 1h</th>
+                        <th class="px-6 py-3 font-normal text-right">Volume 24h</th>
+                        <th class="px-6 py-3 font-normal text-right">Prix</th>
+                        <th class="px-6 py-3 font-normal w-20"></th>
+                    </tr>
+                </thead>
+                <tbody class="text-sm divide-y divide-zinc-800">
+                    {% for pump in pumps %}
+                    <tr class="hover:bg-zinc-800/50 transition-colors">
+                        <td class="px-6 py-4 font-mono font-semibold">{{ pump.symbol }}</td>
+                        <td class="px-6 py-4 text-right">
+                            <span class="inline-flex items-center px-3 py-1 rounded-2xl text-xs font-semibold bg-emerald-500/10 text-emerald-400">
+                                +{{ pump.change_1h }}%
+                            </span>
+                        </td>
+                        <td class="px-6 py-4 text-right font-mono text-zinc-400">${{ "{:,}".format(pump.volume|int) }}</td>
+                        <td class="px-6 py-4 text-right font-mono">{{ pump.price }}</td>
+                        <td class="px-6 py-4">
+                            <a href="https://www.binance.com/en/trade/{{ pump.symbol }}?layout=pro" target="_blank" 
+                               class="text-xs px-3 py-1.5 bg-white text-black rounded-2xl hover:bg-zinc-200 transition flex items-center justify-center gap-x-1">
+                                <span>Trade</span> <i class="fas fa-external-link-alt text-[10px]"></i>
+                            </a>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            {% else %}
+            <div class="px-6 py-12 text-center">
+                <i class="fas fa-search text-4xl text-zinc-700 mb-4"></i>
+                <p class="text-zinc-400">Aucun pump détecté pour le moment.</p>
+                <p class="text-xs text-zinc-500 mt-1">Les conditions du marché sont calmes.</p>
+            </div>
+            {% endif %}
+        </div>
+
+        <div class="mt-6 text-center text-xs text-zinc-500">
+            Éducatif uniquement • Toujours utiliser un stop-loss • Données Binance
+        </div>
+    </div>
+
+    <script>
+        function refreshData() {
+            window.location.reload();
+        }
+        
+        // Auto refresh every 45 seconds
+        setTimeout(() => {
+            window.location.reload();
+        }, 45000);
+    </script>
+</body>
+</html>

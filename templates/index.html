@@ -3,172 +3,219 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>🚀 Crypto Pump Screener - Early Detection</title>
+    <title>🚀 Crypto Pump Screener</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <style>
+        .pump-row { transition: all 0.2s ease; }
+        .pump-row:hover { transform: translateX(4px); }
+        .strong-pump { background: linear-gradient(90deg, rgba(16,185,129,0.08) 0%, transparent 100%); }
+    </style>
 </head>
 <body class="bg-zinc-950 text-white">
     <div class="max-w-6xl mx-auto px-6 py-8">
         <!-- Header -->
-        <div class="flex items-center justify-between mb-8">
+        <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-y-4 mb-8">
             <div class="flex items-center gap-x-3">
-                <div class="w-10 h-10 bg-emerald-500 rounded-2xl flex items-center justify-center">
+                <div class="w-11 h-11 bg-gradient-to-br from-emerald-500 to-teal-500 rounded-2xl flex items-center justify-center shadow-lg shadow-emerald-500/30">
                     <i class="fas fa-rocket text-white text-2xl"></i>
                 </div>
                 <div>
-                    <h1 class="text-3xl font-bold tracking-tighter">Crypto Pump Screener</h1>
-                    <p class="text-zinc-400 text-sm">Early Detection • Binance</p>
+                    <h1 class="text-4xl font-bold tracking-tighter">Pump Screener</h1>
+                    <p class="text-zinc-400 text-sm -mt-1">Binance Early Detection</p>
                 </div>
             </div>
+            
             <div class="flex items-center gap-x-3">
-                <button onclick="refreshData()" class="flex items-center gap-x-2 px-4 py-2 bg-zinc-900 hover:bg-zinc-800 border border-zinc-700 rounded-2xl text-sm transition-colors">
+                <button onclick="refreshData()" 
+                        class="flex items-center gap-x-2 px-5 py-2.5 bg-zinc-900 hover:bg-zinc-800 active:bg-zinc-700 border border-zinc-700 rounded-3xl text-sm font-medium transition-all active:scale-[0.985]">
                     <i class="fas fa-sync-alt"></i>
                     <span>Refresh</span>
                 </button>
-                <div class="px-3 py-1 bg-emerald-500/10 text-emerald-400 text-xs font-mono rounded-2xl flex items-center gap-x-1">
-                    <div class="w-2 h-2 bg-emerald-400 rounded-full animate-pulse"></div>
-                    LIVE
+                
+                <div class="flex items-center bg-zinc-900 border border-zinc-700 rounded-3xl px-1 py-1">
+                    <div class="px-3 flex items-center gap-x-1.5">
+                        <div class="w-2 h-2 bg-emerald-400 rounded-full animate-pulse"></div>
+                        <span class="text-xs font-mono text-emerald-400">LIVE</span>
+                    </div>
                 </div>
+            </div>
+        </div>
+
+        <!-- Controls -->
+        <div class="flex flex-col md:flex-row gap-4 mb-6">
+            <!-- Search -->
+            <div class="flex-1 relative">
+                <div class="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-500">
+                    <i class="fas fa-search"></i>
+                </div>
+                <input type="text" id="search-input" placeholder="Rechercher une paire (ex: ALLO, BTC, SOL...)" 
+                       class="w-full bg-zinc-900 border border-zinc-700 focus:border-emerald-500 pl-11 py-3 rounded-3xl text-sm outline-none transition-colors"
+                       onkeyup="filterPairs()">
+            </div>
+            
+            <!-- Quick Filters -->
+            <div class="flex bg-zinc-900 border border-zinc-700 rounded-3xl p-1">
+                <button onclick="filterByType('all')" id="filter-all"
+                        class="px-5 py-2 text-sm font-medium rounded-[20px] active:bg-zinc-800 transition-colors bg-white text-black">All</button>
+                <button onclick="filterByType('early')" id="filter-early"
+                        class="px-5 py-2 text-sm font-medium rounded-[20px] hover:bg-zinc-800 transition-colors text-amber-400">Early</button>
+                <button onclick="filterByType('confirmed')" id="filter-confirmed"
+                        class="px-5 py-2 text-sm font-medium rounded-[20px] hover:bg-zinc-800 transition-colors text-emerald-400">Confirmed</button>
             </div>
         </div>
 
         <!-- Stats -->
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
             <div class="bg-zinc-900 border border-zinc-800 rounded-3xl p-5">
-                <div class="text-zinc-400 text-sm mb-1">Early Signals</div>
-                <div class="text-4xl font-semibold text-amber-400">{{ data.early|length }}</div>
+                <div class="flex items-center justify-between">
+                    <div>
+                        <div class="text-zinc-400 text-sm">Early Signals</div>
+                        <div class="text-4xl font-semibold text-amber-400 mt-1">{{ data.early|length }}</div>
+                    </div>
+                    <i class="fas fa-search text-3xl text-amber-400/30"></i>
+                </div>
             </div>
             <div class="bg-zinc-900 border border-zinc-800 rounded-3xl p-5">
-                <div class="text-zinc-400 text-sm mb-1">Confirmed Pumps</div>
-                <div class="text-4xl font-semibold text-emerald-400">{{ data.confirmed|length }}</div>
+                <div class="flex items-center justify-between">
+                    <div>
+                        <div class="text-zinc-400 text-sm">Confirmed</div>
+                        <div class="text-4xl font-semibold text-emerald-400 mt-1">{{ data.confirmed|length }}</div>
+                    </div>
+                    <i class="fas fa-bolt text-3xl text-emerald-400/30"></i>
+                </div>
             </div>
-            <div class="bg-zinc-900 border border-zinc-800 rounded-3xl p-5">
+            <div class="bg-zinc-900 border border-zinc-800 rounded-3xl p-5 col-span-2 md:col-span-1">
                 <div class="text-zinc-400 text-sm mb-1">Dernier scan</div>
-                <div class="text-xl font-mono text-emerald-400" id="last-scan">--:--:--</div>
+                <div class="text-2xl font-mono text-emerald-400" id="last-scan">--:--:--</div>
+            </div>
+            <div class="bg-zinc-900 border border-zinc-800 rounded-3xl p-5 flex items-center justify-center">
+                <div class="text-center">
+                    <div class="text-[10px] text-zinc-500 mb-1">NEXT REFRESH</div>
+                    <div class="flex items-baseline justify-center gap-x-1">
+                        <span class="text-3xl font-semibold text-emerald-400" id="countdown">45</span>
+                        <span class="text-xs text-zinc-400">sec</span>
+                    </div>
+                </div>
             </div>
         </div>
 
-        <!-- Countdown -->
-        <div class="mb-8 flex items-center justify-center">
-            <div class="inline-flex items-center gap-x-2 px-4 py-2 bg-zinc-900 border border-zinc-700 rounded-3xl text-sm">
-                <i class="fas fa-clock text-emerald-400"></i>
-                <span>Prochain rafraîchissement dans</span>
-                <span class="font-mono font-semibold text-emerald-400" id="countdown">45</span>
-                <span>secondes</span>
-            </div>
-        </div>
-
-        <!-- Early Accumulation Section -->
-        <div class="mb-10">
-            <div class="flex items-center gap-x-3 mb-4">
-                <div class="px-3 py-1 bg-amber-500/10 text-amber-400 text-xs font-semibold rounded-2xl flex items-center gap-x-2">
+        <!-- Early Accumulation -->
+        <div class="mb-10" id="early-section">
+            <div class="flex items-center gap-x-3 mb-4 px-1">
+                <div class="px-4 py-1.5 bg-amber-500/10 text-amber-400 text-xs font-semibold rounded-3xl flex items-center gap-x-2">
                     <i class="fas fa-search"></i>
                     <span>EARLY ACCUMULATION</span>
                 </div>
-                <div class="text-xs text-zinc-500">Volume qui explose mais prix encore calme → Potentiel futur pump</div>
+                <div class="text-xs text-zinc-500">Volume fort + prix calme = potentiel futur pump</div>
             </div>
             
-            {% if data.early %}
             <div class="bg-zinc-900 border border-zinc-800 rounded-3xl overflow-hidden">
-                <table class="w-full">
+                {% if data.early %}
+                <table class="w-full" id="early-table">
                     <thead>
                         <tr class="border-b border-zinc-800 text-left text-xs text-zinc-400">
-                            <th class="px-6 py-3 font-normal">Paire</th>
-                            <th class="px-6 py-3 font-normal text-right">Hausse 1h</th>
-                            <th class="px-6 py-3 font-normal text-right">Volume 24h</th>
-                            <th class="px-6 py-3 font-normal text-right">Prix</th>
-                            <th class="px-6 py-3 font-normal w-20"></th>
+                            <th class="px-6 py-4 font-normal">Paire</th>
+                            <th class="px-6 py-4 font-normal text-right">Hausse</th>
+                            <th class="px-6 py-4 font-normal text-right">Volume</th>
+                            <th class="px-6 py-4 font-normal text-right">Prix</th>
+                            <th class="px-6 py-4 font-normal w-16"></th>
                         </tr>
                     </thead>
                     <tbody class="text-sm divide-y divide-zinc-800">
                         {% for pump in data.early %}
-                        <tr class="hover:bg-zinc-800/50 transition-colors">
+                        <tr class="pump-row hover:bg-zinc-800/60" data-symbol="{{ pump.symbol }}" data-type="early">
                             <td class="px-6 py-4 font-mono font-semibold">{{ pump.symbol }}</td>
                             <td class="px-6 py-4 text-right">
-                                <span class="inline-flex items-center px-3 py-1 rounded-2xl text-xs font-semibold bg-amber-500/10 text-amber-400">
+                                <span class="inline-flex items-center px-3.5 py-1 rounded-2xl text-xs font-semibold bg-amber-500/10 text-amber-400">
                                     +{{ pump.change_1h }}%
                                 </span>
                             </td>
-                            <td class="px-6 py-4 text-right font-mono text-zinc-400">${{ "{:,}".format(pump.volume|int) }}</td>
-                            <td class="px-6 py-4 text-right font-mono">{{ pump.price }}</td>
+                            <td class="px-6 py-4 text-right font-mono text-zinc-300">${{ "{:,}".format(pump.volume|int) }}</td>
+                            <td class="px-6 py-4 text-right font-mono text-zinc-300">{{ pump.price }}</td>
                             <td class="px-6 py-4">
                                 <a href="https://www.binance.com/en/trade/{{ pump.symbol }}?layout=pro" target="_blank" 
-                                   class="text-xs px-3 py-1.5 bg-white text-black rounded-2xl hover:bg-zinc-200 transition flex items-center justify-center gap-x-1">
-                                    <span>Trade</span> <i class="fas fa-external-link-alt text-[10px]"></i>
+                                   class="inline-flex items-center justify-center w-9 h-9 hover:bg-white/10 rounded-2xl text-zinc-400 hover:text-white transition-colors">
+                                    <i class="fas fa-external-link-alt text-sm"></i>
                                 </a>
                             </td>
                         </tr>
                         {% endfor %}
                     </tbody>
                 </table>
+                {% else %}
+                <div class="px-6 py-10 text-center text-zinc-400">
+                    <i class="fas fa-inbox text-4xl mb-3 opacity-50"></i>
+                    <p>Aucun signal d'accumulation pour le moment</p>
+                </div>
+                {% endif %}
             </div>
-            {% else %}
-            <div class="bg-zinc-900 border border-zinc-800 rounded-3xl px-6 py-8 text-center text-zinc-400">
-                Aucun signal d'accumulation détecté pour le moment.
-            </div>
-            {% endif %}
         </div>
 
-        <!-- Confirmed Pumps Section -->
-        <div>
-            <div class="flex items-center gap-x-3 mb-4">
-                <div class="px-3 py-1 bg-emerald-500/10 text-emerald-400 text-xs font-semibold rounded-2xl flex items-center gap-x-2">
+        <!-- Confirmed Pumps -->
+        <div id="confirmed-section">
+            <div class="flex items-center gap-x-3 mb-4 px-1">
+                <div class="px-4 py-1.5 bg-emerald-500/10 text-emerald-400 text-xs font-semibold rounded-3xl flex items-center gap-x-2">
                     <i class="fas fa-bolt"></i>
-                    <span>CONFIRMED PUMPS (déjà en mouvement)</span>
+                    <span>CONFIRMED PUMPS</span>
                 </div>
+                <div class="text-xs text-zinc-500">Déjà en forte hausse</div>
             </div>
             
-            {% if data.confirmed %}
             <div class="bg-zinc-900 border border-zinc-800 rounded-3xl overflow-hidden">
-                <table class="w-full">
+                {% if data.confirmed %}
+                <table class="w-full" id="confirmed-table">
                     <thead>
                         <tr class="border-b border-zinc-800 text-left text-xs text-zinc-400">
-                            <th class="px-6 py-3 font-normal">Paire</th>
-                            <th class="px-6 py-3 font-normal text-right">Hausse 1h</th>
-                            <th class="px-6 py-3 font-normal text-right">Volume 24h</th>
-                            <th class="px-6 py-3 font-normal text-right">Prix</th>
-                            <th class="px-6 py-3 font-normal w-20"></th>
+                            <th class="px-6 py-4 font-normal">Paire</th>
+                            <th class="px-6 py-4 font-normal text-right">Hausse</th>
+                            <th class="px-6 py-4 font-normal text-right">Volume</th>
+                            <th class="px-6 py-4 font-normal text-right">Prix</th>
+                            <th class="px-6 py-4 font-normal w-16"></th>
                         </tr>
                     </thead>
                     <tbody class="text-sm divide-y divide-zinc-800">
                         {% for pump in data.confirmed %}
-                        <tr class="hover:bg-zinc-800/50 transition-colors">
+                        <tr class="pump-row hover:bg-zinc-800/60 {% if pump.change_1h > 25 %}strong-pump{% endif %}" data-symbol="{{ pump.symbol }}" data-type="confirmed">
                             <td class="px-6 py-4 font-mono font-semibold">{{ pump.symbol }}</td>
                             <td class="px-6 py-4 text-right">
-                                <span class="inline-flex items-center px-3 py-1 rounded-2xl text-xs font-semibold bg-emerald-500/10 text-emerald-400">
+                                <span class="inline-flex items-center px-3.5 py-1 rounded-2xl text-xs font-semibold {% if pump.change_1h > 25 %}bg-emerald-500 text-white{% else %}bg-emerald-500/10 text-emerald-400{% endif %}">
                                     +{{ pump.change_1h }}%
                                 </span>
                             </td>
-                            <td class="px-6 py-4 text-right font-mono text-zinc-400">${{ "{:,}".format(pump.volume|int) }}</td>
-                            <td class="px-6 py-4 text-right font-mono">{{ pump.price }}</td>
+                            <td class="px-6 py-4 text-right font-mono text-zinc-300">${{ "{:,}".format(pump.volume|int) }}</td>
+                            <td class="px-6 py-4 text-right font-mono text-zinc-300">{{ pump.price }}</td>
                             <td class="px-6 py-4">
                                 <a href="https://www.binance.com/en/trade/{{ pump.symbol }}?layout=pro" target="_blank" 
-                                   class="text-xs px-3 py-1.5 bg-white text-black rounded-2xl hover:bg-zinc-200 transition flex items-center justify-center gap-x-1">
-                                    <span>Trade</span> <i class="fas fa-external-link-alt text-[10px]"></i>
+                                   class="inline-flex items-center justify-center w-9 h-9 hover:bg-white/10 rounded-2xl text-zinc-400 hover:text-white transition-colors">
+                                    <i class="fas fa-external-link-alt text-sm"></i>
                                 </a>
                             </td>
                         </tr>
                         {% endfor %}
                     </tbody>
                 </table>
+                {% else %}
+                <div class="px-6 py-10 text-center text-zinc-400">
+                    <i class="fas fa-inbox text-4xl mb-3 opacity-50"></i>
+                    <p>Aucun pump confirmé pour le moment</p>
+                </div>
+                {% endif %}
             </div>
-            {% else %}
-            <div class="bg-zinc-900 border border-zinc-800 rounded-3xl px-6 py-8 text-center text-zinc-400">
-                Aucun pump confirmé pour le moment.
-            </div>
-            {% endif %}
         </div>
 
-        <div class="mt-8 text-center text-xs text-zinc-500">
-            Early = Accumulation silencieuse (avant l'explosion) • Confirmed = Déjà en train de monter
+        <div class="mt-8 text-center">
+            <div class="inline-flex items-center gap-x-2 text-xs text-zinc-500">
+                <div class="px-2.5 py-1 bg-zinc-900 rounded-2xl">Données Binance</div>
+                <div>Auto-refresh 45s</div>
+            </div>
         </div>
     </div>
 
     <script>
         function updateLastScan() {
             const now = new Date();
-            const timeString = now.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
-            document.getElementById('last-scan').textContent = timeString;
+            document.getElementById('last-scan').textContent = now.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
         }
         
         let countdown = 45;
@@ -177,7 +224,7 @@
         function startCountdown() {
             const interval = setInterval(() => {
                 countdown--;
-                countdownEl.textContent = countdown;
+                if (countdownEl) countdownEl.textContent = countdown;
                 if (countdown <= 0) {
                     clearInterval(interval);
                     window.location.reload();
@@ -189,9 +236,70 @@
             window.location.reload();
         }
         
+        // Live search
+        function filterPairs() {
+            const searchTerm = document.getElementById('search-input').value.toUpperCase();
+            const rows = document.querySelectorAll('.pump-row');
+            
+            rows.forEach(row => {
+                const symbol = row.dataset.symbol;
+                if (symbol.includes(searchTerm)) {
+                    row.style.display = '';
+                } else {
+                    row.style.display = 'none';
+                }
+            });
+        }
+        
+        // Quick filters
+        let currentFilter = 'all';
+        
+        function filterByType(type) {
+            currentFilter = type;
+            
+            // Update button styles
+            document.querySelectorAll('[id^="filter-"]').forEach(btn => {
+                btn.classList.remove('bg-white', 'text-black');
+                btn.classList.add('hover:bg-zinc-800');
+            });
+            
+            const activeBtn = document.getElementById('filter-' + type);
+            if (activeBtn) {
+                activeBtn.classList.add('bg-white', 'text-black');
+                activeBtn.classList.remove('hover:bg-zinc-800');
+            }
+            
+            const earlySection = document.getElementById('early-section');
+            const confirmedSection = document.getElementById('confirmed-section');
+            
+            if (type === 'all') {
+                earlySection.style.display = '';
+                confirmedSection.style.display = '';
+            } else if (type === 'early') {
+                earlySection.style.display = '';
+                confirmedSection.style.display = 'none';
+            } else if (type === 'confirmed') {
+                earlySection.style.display = 'none';
+                confirmedSection.style.display = '';
+            }
+        }
+        
         window.onload = function() {
             updateLastScan();
             startCountdown();
+            
+            // Set default filter to All
+            const allBtn = document.getElementById('filter-all');
+            if (allBtn) allBtn.classList.add('bg-white', 'text-black');
+            
+            // Allow Enter key to refresh
+            document.addEventListener('keydown', function(e) {
+                if (e.key === 'r' || e.key === 'R') {
+                    if (document.activeElement.tagName === 'INPUT') return;
+                    e.preventDefault();
+                    refreshData();
+                }
+            });
         };
     </script>
 </body>

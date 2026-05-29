@@ -47,7 +47,7 @@
         <div class="flex flex-col md:flex-row gap-4 mb-6">
             <div class="flex-1 relative">
                 <div class="absolute left-4 top-3.5 text-zinc-500"><i class="fas fa-search"></i></div>
-                <input type="text" id="search-input" placeholder="Rechercher une paire..." 
+                <input type="text" id="search-input" placeholder="Rechercher une paire (ex: ALLO, BTC, SOL...)" 
                        class="w-full bg-zinc-900 border border-zinc-700 focus:border-emerald-500 pl-11 py-3 rounded-3xl text-sm outline-none" onkeyup="filterPairs()">
             </div>
             
@@ -187,17 +187,6 @@
             </div>
         </div>
 
-        <!-- Recently Pumped History -->
-        <div class="mt-10">
-            <div class="flex items-center gap-x-3 mb-4 px-1">
-                <div class="px-4 py-1.5 bg-zinc-800 text-zinc-400 text-xs font-semibold rounded-3xl flex items-center gap-x-2">
-                    <i class="fas fa-history"></i>
-                    <span>RECENTLY PUMPED</span>
-                </div>
-            </div>
-            <div class="text-xs text-zinc-500 px-1">Les 6 derniers pumps détectés (mis à jour à chaque refresh)</div>
-        </div>
-
         <div class="mt-6 text-center text-[10px] text-zinc-500">
             Appuie sur <span class="font-mono bg-zinc-900 px-1.5 py-0.5 rounded">R</span> pour rafraîchir • Données Binance
         </div>
@@ -253,9 +242,16 @@
         }
         
         function filterPairs() {
-            const term = document.getElementById('search-input').value.toUpperCase();
-            document.querySelectorAll('.pump-row').forEach(row => {
-                row.style.display = row.dataset.symbol.includes(term) ? '' : 'none';
+            const term = document.getElementById('search-input').value.toUpperCase().trim();
+            const rows = document.querySelectorAll('.pump-row');
+            
+            rows.forEach(row => {
+                const symbol = row.dataset.symbol || '';
+                if (symbol.toUpperCase().includes(term)) {
+                    row.style.display = '';
+                } else {
+                    row.style.display = 'none';
+                }
             });
         }
         
@@ -288,6 +284,9 @@
                     refreshData();
                 }
             });
+            
+            // Focus search bar on load
+            document.getElementById('search-input').focus();
         };
     </script>
 </body>

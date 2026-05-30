@@ -5,13 +5,13 @@ import os
 app = Flask(__name__)
 
 MIN_PRICE_CHANGE_CONFIRMED = 12.0
-MIN_LIQUIDITY = 30000
+MIN_LIQUIDITY = 25000
 MAX_RESULTS = 12
 
-MIN_VOLUME_SPIKE_EARLY = 3.5
+MIN_VOLUME_SPIKE_EARLY = 3.0
 MAX_PRICE_CHANGE_EARLY = 8.0
 
-MIN_PRICE_CHANGE_TODAY = 8.0  # Lowered to 15% so ALLO and other pumps from today appear
+MIN_PRICE_CHANGE_24H = 8.0  # Lower threshold for 24h pumps (so ALLO and recent pumps appear)
 
 def get_potential_pumps():
     try:
@@ -22,7 +22,7 @@ def get_potential_pumps():
         
         confirmed = []
         early = []
-        today_big = []
+        pumps_24h = []
         
         for ticker in tickers:
             symbol = ticker.get('symbol', '')
@@ -34,7 +34,7 @@ def get_potential_pumps():
                 volume = float(ticker.get('quoteVolume', 0))
                 price = float(ticker.get('lastPrice', 0))
                 
-                # Confirmed pumps (last 1h)
+                # Confirmed pumps (1h)
                 if change_1h >= MIN_PRICE_CHANGE_CONFIRMED and volume > MIN_LIQUIDITY:
                     confirmed.append({
                         'symbol': symbol,
@@ -52,9 +52,9 @@ def get_potential_pumps():
                         'price': price
                     })
                 
-                # Today's Big Movers (real 24h change)
-                if change_1h >= MIN_PRICE_CHANGE_TODAY and volume > MIN_LIQUIDITY:
-                    today_big.append({
+                # Pumps des dernières 24h (lower threshold)
+                if change_1h >= MIN_PRICE_CHANGE_24H and volume > MIN_LIQUIDITY:
+                    pumps_24h.append({
                         'symbol': symbol,
                         'change_24h': round(change_1h, 2),
                         'volume': round(volume),
@@ -65,12 +65,12 @@ def get_potential_pumps():
         
         confirmed = sorted(confirmed, key=lambda x: x['change_1h'], reverse=True)[:MAX_RESULTS]
         early = sorted(early, key=lambda x: x['volume'], reverse=True)[:MAX_RESULTS]
-        today_big = sorted(today_big, key=lambda x: x['change_24h'], reverse=True)[:10]
+        pumps_24h = sorted(pumps_24h, key=lambda x: x['change_24h'], reverse=True)[:12]
         
-        return {'confirmed': confirmed, 'early': early, 'today_big': today_big}
+        return {'confirmed': confirmed, 'early': early, 'pumps_24h': pumps_24h}
     except Exception as e:
         print(f"Error: {e}")
-        return {'confirmed': [], 'early': [], 'today_big': []}
+        return {'confirmed': [], 'early': [], 'pumps_24h': []}
 
 @app.route('/')
 def dashboard():

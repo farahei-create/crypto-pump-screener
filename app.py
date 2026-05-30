@@ -53,13 +53,14 @@ def strategy_bot_page():
 @app.route('/dex')
 def dex_screener():
     try:
-        # DEXScreener API - Latest token profiles (memecoins, low caps on DEX)
-        url = "https://api.dexscreener.com/token-profiles/latest/v1"
+        # Focus on USDC pairs on DEX (memecoins & low-caps)
+        url = "https://api.dexscreener.com/latest/dex/search/?q=USDC"
         response = requests.get(url, timeout=10)
-        tokens = response.json()[:30]  # Limit to 30 newest/hot tokens
-        return render_template('dex.html', tokens=tokens)
+        data = response.json()
+        pairs = data.get('pairs', [])[:30]  # Top 30 USDC pairs
+        return render_template('dex.html', pairs=pairs)
     except Exception as e:
-        return render_template('dex.html', tokens=[], error=str(e))
+        return render_template('dex.html', pairs=[], error=str(e))
 
 @app.route('/api/analyze', methods=['POST'])
 def analyze_pair():

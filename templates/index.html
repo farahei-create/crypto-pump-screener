@@ -3,48 +3,28 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>🚀 Pump Screener - Binance Live Detection</title>
+    <title>🚀 Pump Screener - Binance Live</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/ccxt@4.0.83/dist/ccxt.browser.js"></script>
     <style>
-        * {
-            user-select: none;
-        }
         .pump-row { transition: all 0.2s ease; }
         .pump-row:hover { transform: translateX(5px); background: rgba(255,255,255,0.05); }
         .star { transition: transform 0.2s ease; cursor: pointer; }
         .star:hover { transform: scale(1.3); }
-        .strong-pump { background: linear-gradient(90deg, rgba(16,185,129,0.15) 0%, transparent 100%); }
         .nav-tab { transition: all 0.2s ease; cursor: pointer; }
         .nav-tab.active { background: #18181b; color: white; border-bottom: 3px solid #10b981; }
-        .blink {
-            animation: blink 1s infinite;
+        .loading-spinner {
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #10b981;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
         }
-        @keyframes blink {
-            0%, 100% { opacity: 1; }
-            50% { opacity: 0.5; }
-        }
-        .fade-in {
-            animation: fadeIn 0.5s ease-in;
-        }
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(10px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-        ::-webkit-scrollbar {
-            width: 8px;
-            height: 8px;
-        }
-        ::-webkit-scrollbar-track {
-            background: #18181b;
-            border-radius: 10px;
-        }
-        ::-webkit-scrollbar-thumb {
-            background: #3f3f46;
-            border-radius: 10px;
-        }
-        ::-webkit-scrollbar-thumb:hover {
-            background: #52525b;
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
         }
         .toast {
             position: fixed;
@@ -61,22 +41,15 @@
             from { transform: translateX(100%); opacity: 0; }
             to { transform: translateX(0); opacity: 1; }
         }
-        .loading-spinner {
-            border: 3px solid #f3f3f3;
-            border-top: 3px solid #10b981;
-            border-radius: 50%;
-            width: 40px;
-            height: 40px;
-            animation: spin 1s linear infinite;
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
         }
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
+        .fade-in { animation: fadeIn 0.5s ease-in; }
     </style>
 </head>
 <body class="bg-zinc-950 text-white">
-    <div class="max-w-7xl mx-auto px-6 py-8">
+    <div class="max-w-7xl mx-auto px-4 md:px-6 py-6">
         <!-- Header -->
         <div class="flex flex-col md:flex-row md:items-center justify-between gap-y-4 mb-6 fade-in">
             <div class="flex items-center gap-x-4">
@@ -84,24 +57,23 @@
                     <i class="fas fa-rocket text-white text-2xl"></i>
                 </div>
                 <div>
-                    <h1 class="text-4xl font-bold tracking-[-2px] bg-gradient-to-r from-emerald-400 to-teal-400 bg-clip-text text-transparent">
+                    <h1 class="text-3xl md:text-4xl font-bold tracking-[-2px] bg-gradient-to-r from-emerald-400 to-teal-400 bg-clip-text text-transparent">
                         Pump Screener
                     </h1>
-                    <p class="text-zinc-400 -mt-1 text-sm flex items-center gap-2">
+                    <p class="text-zinc-400 text-xs md:text-sm flex items-center gap-2">
                         <i class="fas fa-chart-line"></i>
                         Binance • Real-time Detection
-                        <span class="text-xs px-2 py-0.5 bg-emerald-500/20 rounded-full">v2.0</span>
                     </p>
                 </div>
             </div>
             
             <div class="flex items-center gap-x-3">
-                <button onclick="refreshData()" class="px-5 py-2.5 bg-zinc-900 hover:bg-zinc-800 active:bg-zinc-700 border border-zinc-700 rounded-3xl text-sm flex items-center gap-x-2 transition-all active:scale-[0.98]">
+                <button onclick="refreshData()" class="px-4 md:px-5 py-2.5 bg-zinc-900 hover:bg-zinc-800 border border-zinc-700 rounded-3xl text-sm flex items-center gap-x-2 transition-all active:scale-[0.98]">
                     <i class="fas fa-sync-alt"></i>
-                    <span class="font-medium">Refresh</span>
+                    <span>Refresh</span>
                 </button>
                 
-                <div class="flex items-center bg-zinc-900 border border-zinc-700 rounded-3xl px-4 py-2 text-xs">
+                <div class="flex items-center bg-zinc-900 border border-zinc-700 rounded-3xl px-3 md:px-4 py-2 text-xs">
                     <div class="flex items-center gap-x-2">
                         <div class="w-2 h-2 bg-emerald-400 rounded-full animate-pulse"></div>
                         <span class="font-mono text-emerald-400 font-semibold">LIVE</span>
@@ -110,296 +82,211 @@
             </div>
         </div>
 
-        <!-- NAV TABS -->
-        <div class="flex border-b border-zinc-800 mb-8">
-            <div class="nav-tab active px-8 py-3 font-semibold flex items-center gap-x-2" onclick="switchTab('screener')">
-                <i class="fas fa-chart-line"></i>
-                <span>Screener</span>
+        <!-- Stats -->
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4 mb-6 fade-in">
+            <div class="bg-gradient-to-br from-zinc-900 to-zinc-950 border border-zinc-800 rounded-2xl p-4">
+                <div class="text-zinc-400 text-xs mb-1 flex items-center gap-1">
+                    <i class="fas fa-hourglass-half text-amber-400 text-xs"></i>
+                    EARLY
+                </div>
+                <div class="text-3xl md:text-4xl font-bold text-amber-400" id="early-count">0</div>
             </div>
-            <div class="nav-tab px-8 py-3 font-semibold flex items-center gap-x-2 text-zinc-400 hover:text-white" onclick="switchTab('bot')">
-                <i class="fas fa-robot"></i>
-                <span>Strategy Bot</span>
-                <span class="ml-1 text-[10px] px-1.5 py-0.5 bg-emerald-500/20 text-emerald-400 rounded">BETA</span>
+            <div class="bg-gradient-to-br from-zinc-900 to-zinc-950 border border-zinc-800 rounded-2xl p-4">
+                <div class="text-zinc-400 text-xs mb-1 flex items-center gap-1">
+                    <i class="fas fa-bolt text-emerald-400 text-xs"></i>
+                    CONFIRMED
+                </div>
+                <div class="text-3xl md:text-4xl font-bold text-emerald-400" id="confirmed-count">0</div>
             </div>
-        </div>
-
-        <!-- Tab Screener -->
-        <div id="screener-tab">
-            <!-- Stats -->
-            <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8 fade-in">
-                <div class="bg-gradient-to-br from-zinc-900 to-zinc-950 border border-zinc-800 rounded-3xl p-5 hover:border-emerald-500/50 transition-all">
-                    <div class="text-zinc-400 text-xs mb-1 flex items-center gap-2">
-                        <i class="fas fa-hourglass-half text-amber-400"></i>
-                        EARLY SIGNALS
-                    </div>
-                    <div class="text-4xl font-bold text-amber-400" id="early-count">0</div>
-                    <div class="text-[10px] text-zinc-500 mt-1">Volume spike detected</div>
+            <div class="bg-gradient-to-br from-zinc-900 to-zinc-950 border border-zinc-800 rounded-2xl p-4">
+                <div class="text-zinc-400 text-xs mb-1 flex items-center gap-1">
+                    <i class="fas fa-fire text-blue-400 text-xs"></i>
+                    24H PUMPS
                 </div>
-                <div class="bg-gradient-to-br from-zinc-900 to-zinc-950 border border-zinc-800 rounded-3xl p-5 hover:border-emerald-500/50 transition-all">
-                    <div class="text-zinc-400 text-xs mb-1 flex items-center gap-2">
-                        <i class="fas fa-bolt text-emerald-400"></i>
-                        CONFIRMED
-                    </div>
-                    <div class="text-4xl font-bold text-emerald-400" id="confirmed-count">0</div>
-                    <div class="text-[10px] text-zinc-500 mt-1">Moving strongly</div>
-                </div>
-                <div class="bg-gradient-to-br from-zinc-900 to-zinc-950 border border-zinc-800 rounded-3xl p-5 hover:border-emerald-500/50 transition-all">
-                    <div class="text-zinc-400 text-xs mb-1 flex items-center gap-2">
-                        <i class="fas fa-fire text-blue-400"></i>
-                        24H PUMPS
-                    </div>
-                    <div class="text-4xl font-bold text-blue-400" id="pumps-count">0</div>
-                    <div class="text-[10px] text-zinc-500 mt-1">+15% in 24h</div>
-                </div>
-                <div class="bg-gradient-to-br from-zinc-900 to-zinc-950 border border-zinc-800 rounded-3xl p-5">
-                    <div class="text-zinc-400 text-[10px] mb-1">NEXT REFRESH</div>
-                    <div class="flex items-baseline gap-x-1">
-                        <span class="text-4xl font-bold text-emerald-400" id="countdown">45</span>
-                        <span class="text-xs text-zinc-400">sec</span>
-                    </div>
-                    <div class="text-[9px] text-zinc-600 mt-1" id="last-update">--:--:--</div>
-                </div>
+                <div class="text-3xl md:text-4xl font-bold text-blue-400" id="pumps-count">0</div>
             </div>
-
-            <!-- Controls -->
-            <div class="flex flex-col md:flex-row gap-4 mb-6">
-                <div class="flex-1 relative">
-                    <div class="absolute left-4 top-3.5 text-zinc-500"><i class="fas fa-search"></i></div>
-                    <input type="text" id="search-input" placeholder="Rechercher une paire (ex: BTC, ETH, SOL)..." 
-                           class="w-full bg-zinc-900 border border-zinc-700 focus:border-emerald-500 pl-11 py-3 rounded-3xl text-sm outline-none transition-all">
-                </div>
-                
-                <div class="flex bg-zinc-900 border border-zinc-700 rounded-3xl p-1 text-sm">
-                    <button onclick="filterByType('all')" id="filter-all" class="px-5 py-2 rounded-[20px] font-medium transition-colors bg-white text-black">All</button>
-                    <button onclick="filterByType('early')" id="filter-early" class="px-5 py-2 rounded-[20px] text-amber-400 hover:bg-zinc-800 transition-colors">
-                        <i class="fas fa-clock"></i> Early
-                    </button>
-                    <button onclick="filterByType('confirmed')" id="filter-confirmed" class="px-5 py-2 rounded-[20px] text-emerald-400 hover:bg-zinc-800 transition-colors">
-                        <i class="fas fa-chart-line"></i> Confirmed
-                    </button>
-                </div>
-            </div>
-
-            <!-- Loading State -->
-            <div id="loading" class="hidden fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-                <div class="bg-zinc-900 rounded-2xl p-8 flex flex-col items-center gap-4">
-                    <div class="loading-spinner"></div>
-                    <p class="text-sm">Récupération des données Binance...</p>
-                </div>
-            </div>
-
-            <!-- Early Accumulation -->
-            <div class="mb-10" id="early-section">
-                <div class="flex items-center justify-between mb-4 px-1">
-                    <div class="flex items-center gap-x-3">
-                        <div class="px-4 py-1.5 bg-amber-500/10 text-amber-400 text-xs font-semibold rounded-3xl flex items-center gap-x-2">
-                            <i class="fas fa-search"></i>
-                            <span>EARLY ACCUMULATION</span>
-                        </div>
-                        <span class="text-xs text-zinc-500"><i class="fas fa-chart-simple"></i> Volume fort + prix calme</span>
-                    </div>
-                </div>
-                
-                <div class="bg-zinc-900 border border-zinc-800 rounded-3xl overflow-hidden" id="early-container"></div>
-            </div>
-
-            <!-- Confirmed Pumps -->
-            <div id="confirmed-section">
-                <div class="flex items-center justify-between mb-4 px-1">
-                    <div class="flex items-center gap-x-3">
-                        <div class="px-4 py-1.5 bg-emerald-500/10 text-emerald-400 text-xs font-semibold rounded-3xl flex items-center gap-x-2">
-                            <i class="fas fa-bolt"></i>
-                            <span>CONFIRMED PUMPS</span>
-                        </div>
-                        <span class="text-xs text-zinc-500"><i class="fas fa-rocket"></i> Déjà en mouvement</span>
-                    </div>
-                </div>
-                
-                <div class="bg-zinc-900 border border-zinc-800 rounded-3xl overflow-hidden" id="confirmed-container"></div>
-            </div>
-        </div>
-
-        <!-- Tab Bot (Strategy) -->
-        <div id="bot-tab" class="hidden">
-            <div class="bg-gradient-to-br from-zinc-900 to-zinc-950 rounded-3xl border border-zinc-800 p-8">
-                <div class="text-center mb-8">
-                    <i class="fas fa-robot text-5xl text-emerald-400 mb-4"></i>
-                    <h2 class="text-2xl font-bold mb-2">Strategy Bot</h2>
-                    <p class="text-zinc-400">Stratégies de trading automatisées basées sur les détections</p>
-                </div>
-                
-                <div class="grid md:grid-cols-2 gap-6">
-                    <div class="bg-black/30 rounded-2xl p-6 border border-zinc-800">
-                        <div class="flex items-center gap-3 mb-4">
-                            <div class="w-10 h-10 bg-amber-500/20 rounded-xl flex items-center justify-center">
-                                <i class="fas fa-clock text-amber-400"></i>
-                            </div>
-                            <div>
-                                <h3 class="font-bold">Early Entry Strategy</h3>
-                                <p class="text-xs text-zinc-500">Détection précoce des accumulations</p>
-                            </div>
-                        </div>
-                        <ul class="space-y-2 text-sm text-zinc-300">
-                            <li><i class="fas fa-check text-emerald-400 mr-2"></i> Volume > $1M en 15min</li>
-                            <li><i class="fas fa-check text-emerald-400 mr-2"></i> Hausse modérée (0-3%)</li>
-                            <li><i class="fas fa-check text-emerald-400 mr-2"></i> Spike de volume > 150%</li>
-                            <li class="text-emerald-400 mt-3">🎯 Position size: 2% du capital</li>
-                            <li class="text-emerald-400">🎯 Stop loss: -3%</li>
-                        </ul>
-                    </div>
-                    
-                    <div class="bg-black/30 rounded-2xl p-6 border border-zinc-800">
-                        <div class="flex items-center gap-3 mb-4">
-                            <div class="w-10 h-10 bg-emerald-500/20 rounded-xl flex items-center justify-center">
-                                <i class="fas fa-chart-line text-emerald-400"></i>
-                            </div>
-                            <div>
-                                <h3 class="font-bold">Breakout Strategy</h3>
-                                <p class="text-xs text-zinc-500">Confirmation de tendance</p>
-                            </div>
-                        </div>
-                        <ul class="space-y-2 text-sm text-zinc-300">
-                            <li><i class="fas fa-check text-emerald-400 mr-2"></i> Hausse > 4% en 1h</li>
-                            <li><i class="fas fa-check text-emerald-400 mr-2"></i> Volume > $2M</li>
-                            <li><i class="fas fa-check text-emerald-400 mr-2"></i> Momentum confirmé</li>
-                            <li class="text-emerald-400 mt-3">🎯 Position size: 3% du capital</li>
-                            <li class="text-emerald-400">🎯 Stop loss: -5%</li>
-                        </ul>
-                    </div>
-                </div>
-                
-                <div class="mt-8 p-4 bg-emerald-500/10 rounded-2xl border border-emerald-500/30">
-                    <div class="flex items-center gap-3">
-                        <i class="fas fa-shield-alt text-emerald-400 text-xl"></i>
-                        <p class="text-xs text-zinc-300">⚠️ Ce bot est un outil d'analyse. Les décisions de trading restent sous votre responsabilité. Testez toujours sur un compte démo d'abord.</p>
-                    </div>
+            <div class="bg-gradient-to-br from-zinc-900 to-zinc-950 border border-zinc-800 rounded-2xl p-4">
+                <div class="text-zinc-400 text-[10px] mb-1">REFRESH</div>
+                <div class="flex items-baseline gap-x-1">
+                    <span class="text-3xl md:text-4xl font-bold text-emerald-400" id="countdown">45</span>
+                    <span class="text-xs text-zinc-400">sec</span>
                 </div>
             </div>
         </div>
 
-        <div class="mt-6 text-center text-[10px] text-zinc-500 flex items-center justify-center gap-4">
-            <span><i class="fas fa-keyboard"></i> Appuie sur <span class="font-mono bg-zinc-900 px-1.5 py-0.5 rounded">R</span> pour rafraîchir</span>
-            <span><i class="fas fa-database"></i> Données Binance en temps réel</span>
+        <!-- Search & Filter -->
+        <div class="flex flex-col md:flex-row gap-3 mb-6">
+            <div class="flex-1 relative">
+                <div class="absolute left-4 top-3.5 text-zinc-500"><i class="fas fa-search text-sm"></i></div>
+                <input type="text" id="search-input" placeholder="Rechercher une paire (BTC, ETH, SOL)..." 
+                       class="w-full bg-zinc-900 border border-zinc-700 focus:border-emerald-500 pl-10 py-3 rounded-3xl text-sm outline-none">
+            </div>
+            
+            <div class="flex bg-zinc-900 border border-zinc-700 rounded-3xl p-1 text-sm">
+                <button onclick="filterByType('all')" id="filter-all" class="px-4 md:px-5 py-2 rounded-[20px] font-medium transition-colors bg-white text-black">All</button>
+                <button onclick="filterByType('early')" id="filter-early" class="px-4 md:px-5 py-2 rounded-[20px] text-amber-400">Early</button>
+                <button onclick="filterByType('confirmed')" id="filter-confirmed" class="px-4 md:px-5 py-2 rounded-[20px] text-emerald-400">Confirmed</button>
+            </div>
+        </div>
+
+        <!-- Loading -->
+        <div id="loading" class="hidden fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+            <div class="bg-zinc-900 rounded-2xl p-8 flex flex-col items-center gap-4">
+                <div class="loading-spinner"></div>
+                <p class="text-sm">Chargement des données Binance...</p>
+            </div>
+        </div>
+
+        <!-- Results -->
+        <div id="early-section" class="mb-8">
+            <div class="flex items-center gap-x-3 mb-3 px-1">
+                <div class="px-3 py-1 bg-amber-500/10 text-amber-400 text-xs font-semibold rounded-3xl flex items-center gap-x-2">
+                    <i class="fas fa-search"></i>
+                    <span>EARLY ACCUMULATION</span>
+                </div>
+            </div>
+            <div class="bg-zinc-900 border border-zinc-800 rounded-3xl overflow-hidden" id="early-container"></div>
+        </div>
+
+        <div id="confirmed-section">
+            <div class="flex items-center gap-x-3 mb-3 px-1">
+                <div class="px-3 py-1 bg-emerald-500/10 text-emerald-400 text-xs font-semibold rounded-3xl flex items-center gap-x-2">
+                    <i class="fas fa-bolt"></i>
+                    <span>CONFIRMED PUMPS</span>
+                </div>
+            </div>
+            <div class="bg-zinc-900 border border-zinc-800 rounded-3xl overflow-hidden" id="confirmed-container"></div>
+        </div>
+
+        <div class="mt-6 text-center text-[10px] text-zinc-500">
+            <i class="fas fa-chart-line"></i> Données en temps réel • Binance
         </div>
     </div>
 
     <script>
-        let currentData = null;
+        let currentData = { early: [], confirmed: [] };
         let countdown = 45;
         let countdownInterval;
         let currentFilter = 'all';
         let favorites = JSON.parse(localStorage.getItem('pumpFavorites') || '[]');
-        
-        function switchTab(tab) {
-            if (tab === 'screener') {
-                document.getElementById('screener-tab').classList.remove('hidden');
-                document.getElementById('bot-tab').classList.add('hidden');
-                document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
-                document.querySelectorAll('.nav-tab')[0].classList.add('active');
-            } else {
-                document.getElementById('screener-tab').classList.add('hidden');
-                document.getElementById('bot-tab').classList.remove('hidden');
-                document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
-                document.querySelectorAll('.nav-tab')[1].classList.add('active');
-            }
-        }
+
+        // Initialiser Binance avec CCXT
+        const exchange = new ccxt.binance();
         
         async function loadData() {
             try {
                 document.getElementById('loading').classList.remove('hidden');
                 
-                const response = await fetch('/api/data');
-                if (!response.ok) throw new Error('Erreur réseau');
+                // Récupérer les tickers
+                const tickers = await exchange.fetchTickers();
+                const usdtPairs = [];
                 
-                const data = await response.json();
-                currentData = data;
-                
-                if (data.error) {
-                    console.error('Erreur API:', data.error);
-                    showToast('⚠️ Erreur de connexion Binance', 'error');
-                } else {
-                    updateUI(data);
-                    showToast('✅ Données mises à jour', 'success');
+                for (const [symbol, ticker] of Object.entries(tickers)) {
+                    if (symbol.endsWith('/USDT') && ticker.quoteVolume && ticker.quoteVolume > 500000) {
+                        usdtPairs.push({
+                            symbol: symbol.replace('/USDT', ''),
+                            change_1h: ticker.percentage || 0,
+                            volume: ticker.quoteVolume,
+                            price: ticker.last,
+                            high: ticker.high,
+                            low: ticker.low
+                        });
+                    }
                 }
+                
+                // Trier par volume
+                usdtPairs.sort((a, b) => b.volume - a.volume);
+                
+                const early = [];
+                const confirmed = [];
+                
+                for (const pair of usdtPairs.slice(0, 150)) {
+                    const change = pair.change_1h;
+                    const volume = pair.volume;
+                    
+                    if (volume > 1000000 && change >= 0.5 && change <= 4) {
+                        early.push({
+                            symbol: pair.symbol,
+                            change_1h: change.toFixed(2),
+                            volume: volume,
+                            price: pair.price < 1 ? pair.price.toFixed(8) : pair.price.toFixed(4)
+                        });
+                    } else if (change >= 4.5) {
+                        confirmed.push({
+                            symbol: pair.symbol,
+                            change_1h: change.toFixed(2),
+                            volume: volume,
+                            price: pair.price < 1 ? pair.price.toFixed(8) : pair.price.toFixed(4)
+                        });
+                    }
+                }
+                
+                currentData = {
+                    early: early.slice(0, 15),
+                    confirmed: confirmed.slice(0, 20),
+                    pumps_24h: confirmed.slice(0, 10)
+                };
+                
+                updateUI();
+                showToast('✅ Données mises à jour', 'success');
+                
             } catch (error) {
                 console.error('Erreur:', error);
-                showToast('❌ Erreur de connexion au serveur', 'error');
+                showToast('❌ Erreur de connexion Binance', 'error');
             } finally {
                 document.getElementById('loading').classList.add('hidden');
             }
         }
         
-        function updateUI(data) {
-            // Mise à jour des compteurs
-            document.getElementById('early-count').textContent = data.early?.length || 0;
-            document.getElementById('confirmed-count').textContent = data.confirmed?.length || 0;
-            document.getElementById('pumps-count').textContent = data.pumps_24h?.length || 0;
-            document.getElementById('last-update').textContent = data.last_update || '--:--:--';
+        function updateUI() {
+            document.getElementById('early-count').textContent = currentData.early.length;
+            document.getElementById('confirmed-count').textContent = currentData.confirmed.length;
+            document.getElementById('pumps-count').textContent = currentData.pumps_24h.length;
             
-            // Mise à jour des tableaux
-            updateTable('early-container', data.early || [], 'early');
-            updateTable('confirmed-container', data.confirmed || [], 'confirmed');
+            updateTable('early-container', currentData.early, 'early');
+            updateTable('confirmed-container', currentData.confirmed, 'confirmed');
             
-            // Re-filtrer si nécessaire
             filterByType(currentFilter);
         }
         
         function updateTable(containerId, items, type) {
             const container = document.getElementById(containerId);
             if (!items || items.length === 0) {
-                container.innerHTML = '<div class="px-6 py-9 text-center text-zinc-400 text-sm"><i class="fas fa-inbox mr-2"></i>Aucun signal pour le moment</div>';
+                container.innerHTML = '<div class="px-6 py-9 text-center text-zinc-400 text-sm"><i class="fas fa-inbox mr-2"></i>Aucun signal</div>';
                 return;
             }
             
-            const html = `
-                <table class="w-full">
-                    <thead>
-                        <tr class="border-b border-zinc-800 text-xs text-zinc-400">
-                            <th class="px-6 py-4 w-8"></th>
-                            <th class="px-6 py-4 font-normal text-left">Paire</th>
-                            <th class="px-6 py-4 font-normal text-right">Hausse 1h</th>
-                            <th class="px-6 py-4 font-normal text-right">Volume (USDT)</th>
-                            <th class="px-6 py-4 font-normal text-right">Prix</th>
-                            <th class="px-6 py-4 font-normal w-16"></th>
-                        </tr>
-                    </thead>
-                    <tbody class="text-sm divide-y divide-zinc-800">
-                        ${items.map(item => `
-                            <tr class="pump-row fade-in" data-symbol="${item.symbol}" data-type="${type}">
-                                <td class="px-4 py-4">
-                                    <i class="fas fa-star star ${favorites.includes(item.symbol) ? 'text-amber-400' : 'text-zinc-600'}" 
-                                       onclick="toggleFavorite('${item.symbol}', this)"></i>
-                                </td>
-                                <td class="px-6 py-4 font-mono font-semibold">${item.symbol}</td>
-                                <td class="px-6 py-4 text-right">
-                                    <span class="px-3.5 py-1 rounded-2xl text-xs font-semibold ${type === 'early' ? 'bg-amber-500/10 text-amber-400' : 'bg-emerald-500/10 text-emerald-400'}">
-                                        +${item.change_1h}%
-                                    </span>
-                                </td>
-                                <td class="px-6 py-4 text-right font-mono text-zinc-300">
-                                    ${formatNumber(item.volume)}
-                                </td>
-                                <td class="px-6 py-4 text-right font-mono text-zinc-300">
-                                    ${item.price < 1 ? item.price : item.price.toLocaleString()}
-                                </td>
-                                <td class="px-6 py-4">
-                                    <a href="https://www.binance.com/en/trade/${item.symbol}?layout=pro" target="_blank" 
-                                       class="text-zinc-400 hover:text-white transition-colors">
-                                        <i class="fas fa-external-link-alt"></i>
-                                    </a>
-                                </td>
-                            </tr>
-                        `).join('')}
-                    </tbody>
-                </table>
-            `;
+            let html = '<div class="divide-y divide-zinc-800">';
+            for (const item of items) {
+                const isFavorite = favorites.includes(item.symbol);
+                html += `
+                    <div class="pump-row flex items-center justify-between p-4 hover:bg-zinc-800/50" data-symbol="${item.symbol}" data-type="${type}">
+                        <div class="flex items-center gap-3 flex-1">
+                            <i class="fas fa-star star ${isFavorite ? 'text-amber-400' : 'text-zinc-600'}" 
+                               onclick="toggleFavorite('${item.symbol}', this)"></i>
+                            <span class="font-mono font-semibold text-sm">${item.symbol}</span>
+                        </div>
+                        <div class="flex items-center gap-4 flex-1 justify-end">
+                            <span class="px-3 py-1 rounded-2xl text-xs font-semibold ${type === 'early' ? 'bg-amber-500/10 text-amber-400' : 'bg-emerald-500/10 text-emerald-400'}">
+                                +${item.change_1h}%
+                            </span>
+                            <span class="text-xs text-zinc-400 font-mono">$${formatNumber(item.volume)}</span>
+                            <span class="text-xs text-zinc-300 font-mono">${item.price}</span>
+                            <a href="https://www.binance.com/en/trade/${item.symbol}_USDT" target="_blank" class="text-zinc-500 hover:text-white">
+                                <i class="fas fa-external-link-alt text-xs"></i>
+                            </a>
+                        </div>
+                    </div>
+                `;
+            }
+            html += '</div>';
             container.innerHTML = html;
         }
         
         function formatNumber(num) {
-            if (num >= 1000000) return `$${(num / 1000000).toFixed(1)}M`;
-            if (num >= 1000) return `$${(num / 1000).toFixed(1)}K`;
-            return `$${num.toFixed(0)}`;
+            if (num >= 1000000) return (num / 1000000).toFixed(1) + 'M';
+            if (num >= 1000) return (num / 1000).toFixed(1) + 'K';
+            return num.toFixed(0);
         }
         
         function toggleFavorite(symbol, element) {
@@ -413,18 +300,12 @@
                 element.classList.remove('text-zinc-600');
             }
             localStorage.setItem('pumpFavorites', JSON.stringify(favorites));
-            showToast(`${favorites.includes(symbol) ? '⭐ Ajouté' : '☆ Retiré'} des favoris`, 'info');
         }
         
-        function showToast(message, type = 'info') {
+        function showToast(message, type) {
             const toast = document.createElement('div');
             toast.className = 'toast';
-            toast.innerHTML = `
-                <div class="flex items-center gap-2">
-                    <i class="fas ${type === 'success' ? 'fa-check-circle text-emerald-400' : type === 'error' ? 'fa-exclamation-circle text-red-400' : 'fa-info-circle text-blue-400'}"></i>
-                    <span class="text-sm">${message}</span>
-                </div>
-            `;
+            toast.innerHTML = `<div class="flex items-center gap-2"><i class="fas ${type === 'success' ? 'fa-check-circle text-emerald-400' : 'fa-exclamation-circle text-red-400'}"></i><span class="text-sm">${message}</span></div>`;
             document.body.appendChild(toast);
             setTimeout(() => toast.remove(), 3000);
         }
@@ -452,10 +333,10 @@
         }
         
         function filterPairs() {
-            const term = document.getElementById('search-input').value.toUpperCase().trim();
+            const term = document.getElementById('search-input').value.toUpperCase();
             document.querySelectorAll('.pump-row').forEach(row => {
                 const symbol = row.dataset.symbol || '';
-                row.style.display = symbol.toUpperCase().includes(term) ? '' : 'none';
+                row.style.display = symbol.includes(term) ? '' : 'none';
             });
         }
         
@@ -467,8 +348,7 @@
             document.querySelectorAll('[id^="filter-"]').forEach(b => {
                 b.classList.remove('bg-white', 'text-black');
             });
-            const btn = document.getElementById('filter-' + type);
-            if (btn) btn.classList.add('bg-white', 'text-black');
+            document.getElementById(`filter-${type}`).classList.add('bg-white', 'text-black');
             
             if (type === 'all') {
                 earlySection.style.display = '';
@@ -476,35 +356,17 @@
             } else if (type === 'early') {
                 earlySection.style.display = '';
                 confirmedSection.style.display = 'none';
-            } else if (type === 'confirmed') {
+            } else {
                 earlySection.style.display = 'none';
                 confirmedSection.style.display = '';
             }
         }
         
-        // Event listeners
         document.getElementById('search-input').addEventListener('keyup', filterPairs);
-        document.addEventListener('keydown', (e) => {
-            if ((e.key === 'r' || e.key === 'R') && document.activeElement.tagName !== 'INPUT') {
-                e.preventDefault();
-                refreshData();
-            }
-        });
         
-        // Initialisation
+        // Démarrer
         loadData();
         startCountdown();
-        setInterval(() => {
-            if (countdown > 30 && currentData) {
-                // Refresh silencieux en arrière-plan
-                fetch('/api/data').then(r => r.json()).then(data => {
-                    if (data && data.last_update !== currentData?.last_update) {
-                        updateUI(data);
-                        currentData = data;
-                    }
-                }).catch(console.error);
-            }
-        }, 10000);
     </script>
 </body>
 </html>

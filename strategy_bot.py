@@ -19,6 +19,7 @@ class PaperTradingBot:
         self.equity_curve = [10000.0]
 
     def get_real_time_data(self, symbol):
+        """Try symbol as-is, then try USDT version if USDC fails"""
         try:
             ticker = exchange.fetch_ticker(symbol)
             ohlcv = exchange.fetch_ohlcv(symbol, '5m', limit=80)
@@ -26,6 +27,17 @@ class PaperTradingBot:
             df['timestamp'] = pd.to_datetime(df['timestamp'], unit='ms')
             return ticker, df
         except:
+            # Try USDT version if USDC failed
+            if symbol.endswith('USDC'):
+                try:
+                    alt_symbol = symbol.replace('USDC', 'USDT')
+                    ticker = exchange.fetch_ticker(alt_symbol)
+                    ohlcv = exchange.fetch_ohlcv(alt_symbol, '5m', limit=80)
+                    df = pd.DataFrame(ohlcv, columns=['timestamp', 'open', 'high', 'low', 'close', 'volume'])
+                    df['timestamp'] = pd.to_datetime(df['timestamp'], unit='ms')
+                    return ticker, df
+                except:
+                    return None, None
             return None, None
 
     def analyze_pair(self, symbol):

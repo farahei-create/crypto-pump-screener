@@ -50,6 +50,17 @@ def dashboard():
 def strategy_bot_page():
     return render_template('bot.html')
 
+@app.route('/dex')
+def dex_screener():
+    try:
+        # DEXScreener API - Latest token profiles (memecoins, low caps on DEX)
+        url = "https://api.dexscreener.com/token-profiles/latest/v1"
+        response = requests.get(url, timeout=10)
+        tokens = response.json()[:30]  # Limit to 30 newest/hot tokens
+        return render_template('dex.html', tokens=tokens)
+    except Exception as e:
+        return render_template('dex.html', tokens=[], error=str(e))
+
 @app.route('/api/analyze', methods=['POST'])
 def analyze_pair():
     data = request.get_json()

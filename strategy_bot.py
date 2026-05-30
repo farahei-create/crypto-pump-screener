@@ -1,43 +1,36 @@
-import ccxt
+import requests
 import pandas as pd
 import numpy as np
 from datetime import datetime
-
-try:
-    from config import MIN_PRICE_CHANGE_1H, MIN_LIQUIDITY, MAX_RESULTS
-except:
-    MIN_PRICE_CHANGE_1H = 8.0
-    MIN_LIQUIDITY = 25000
-    MAX_RESULTS = 10
-
-exchange = ccxt.binance({'enableRateLimit': True})
 
 class PaperTradingBot:
     def __init__(self):
         self.positions = []
         self.balance = 10000.0
-        self.equity_curve = [10000.0]
 
     def get_real_time_data(self, symbol):
-        """Try symbol as-is, then try USDT version if USDC fails"""
+        """Simple and reliable method using public Binance API (no ccxt needed)"""
         try:
-            ticker = exchange.fetch_ticker(symbol)
-            ohlcv = exchange.fetch_ohlcv(symbol, '5m', limit=80)
-            df = pd.DataFrame(ohlcv, columns=['timestamp', 'open', 'high', 'low', 'close', 'volume'])
+            # Get ticker
+            ticker_url = f"https://api.binance.com/api/v3/ticker/24hr?symbol={symbol}"
+            ticker = requests.get(ticker_url, timeout=8).json()
+            
+            if 'code' in ticker:  # Error from Binance
+                return None, None
+            
+            # Get OHLCV (klines)
+            kline_url = f"https://api.binance.com/api/v3/klines?symbol={symbol}&interval=5m&limit=80"
+            klines = requests.get(kline_url, timeout=8).json()
+            
+            if not klines or isinstance(klines, dict):
+                return None, None
+            
+            df = pd.DataFrame(klines, columns=['timestamp', 'open', 'high', 'low', 'close', 'volume', 'close_time', 'quote_asset_volume', 'trades', 'taker_buy_base', 'taker_buy_quote', 'ignore'])
+            df = df[['timestamp', 'open', 'high', 'low', 'close', 'volume']].astype(float)
             df['timestamp'] = pd.to_datetime(df['timestamp'], unit='ms')
+            
             return ticker, df
         except:
-            # Try USDT version if USDC failed
-            if symbol.endswith('USDC'):
-                try:
-                    alt_symbol = symbol.replace('USDC', 'USDT')
-                    ticker = exchange.fetch_ticker(alt_symbol)
-                    ohlcv = exchange.fetch_ohlcv(alt_symbol, '5m', limit=80)
-                    df = pd.DataFrame(ohlcv, columns=['timestamp', 'open', 'high', 'low', 'close', 'volume'])
-                    df['timestamp'] = pd.to_datetime(df['timestamp'], unit='ms')
-                    return ticker, df
-                except:
-                    return None, None
             return None, None
 
     def analyze_pair(self, symbol):
@@ -45,19 +38,31 @@ class PaperTradingBot:
         if ticker is None or df is None:
             return None
 
-        current_price = ticker['last']
-        change_1h = ticker.get('percentage', 0) or 0
-        volume = ticker.get('quoteVolume', 0) or 0
+        current_price = float(ticker.get('lastPrice', 0))
+        change_1h = float(ticker.get('priceChangePercent', 0))
+        volume = float(ticker.get('quoteVolume', 0))
 
-        df['rsi'] = self.calculate_rsi(df['close'])
-        volume_spike = volume / df['volume'].rolling(20).mean().iloc[-1] if df['volume'].rolling(20).mean().iloc[-1] > 0 else 1
+        # RSI
+        delta = df['close'].diff()
+        gain = (delta.where(delta > 0, 0)).rolling(window=14).mean()
+        loss = (-delta.where(delta < 0, 0)).rolling(window=14).mean()
+        rs = gain / loss
+        rsi = 100 - (100 / (1 + rs)).iloc[-1]
 
+        # Volume spike
+        volume_ma = df['volume'].rolling(20).mean().iloc[-1]
+        volume_spike = volume / volume_ma if volume_ma > 0 else 1
+
+        # Simple correlation (BTC)
         try:
-            btc_df = pd.DataFrame(exchange.fetch_ohlcv('BTC/USDT', '5m', limit=80), columns=['ts','o','h','l','c','v'])
-            correlation = df['close'].corr(btc_df['c'])
+            btc_url = "https://api.binance.com/api/v3/ticker/24hr?symbol=BTCUSDT"
+            btc_ticker = requests.get(btc_url, timeout=5).json()
+            btc_change = float(btc_ticker.get('priceChangePercent', 0))
+            correlation = 0.3 if abs(change_1h - btc_change) > 15 else 0.7
         except:
-            correlation = 0.35
+            correlation = 0.4
 
+        # Scoring
         score = 0
         reasons = []
         if change_1h > 10 and volume_spike > 2.2:
@@ -66,12 +71,12 @@ class PaperTradingBot:
         if volume_spike > 3.5:
             score += 20
             reasons.append("Volume extrêmement élevé")
-        if df['rsi'].iloc[-1] < 38:
+        if rsi < 38:
             score += 18
-            reasons.append("RSI en zone oversold")
+            reasons.append("RSI en zone oversold (potentiel rebond)")
         if abs(correlation) < 0.45:
             score += 12
-            reasons.append("Faible corrélation BTC = alpha indépendant")
+            reasons.append("Faible corrélation BTC = opportunité indépendante")
 
         recommendation = "LONG" if score > 50 else ("SHORT" if change_1h < -7 else "HOLD")
         confidence = min(92, max(45, score + 15))
@@ -82,20 +87,13 @@ class PaperTradingBot:
             'change_1h': round(change_1h, 2),
             'volume': round(volume),
             'volume_spike': round(volume_spike, 2),
-            'rsi': round(df['rsi'].iloc[-1], 1),
+            'rsi': round(rsi, 1),
             'correlation_btc': round(correlation, 2),
             'recommendation': recommendation,
             'confidence': confidence,
             'reasons': reasons,
             'ohlcv': df[['timestamp', 'open', 'high', 'low', 'close', 'volume']].tail(40).to_dict('records')
         }
-
-    def calculate_rsi(self, prices, period=14):
-        delta = prices.diff()
-        gain = (delta.where(delta > 0, 0)).rolling(window=period).mean()
-        loss = (-delta.where(delta < 0, 0)).rolling(window=period).mean()
-        rs = gain / loss
-        return 100 - (100 / (1 + rs))
 
     def simulate_trade(self, symbol, side, amount_usdc, entry_price):
         position = {
@@ -118,7 +116,6 @@ class PaperTradingBot:
                 pos['pnl'] = round(pnl, 2)
                 pos['status'] = 'closed'
                 self.balance += pnl
-                self.equity_curve.append(self.balance)
                 return pos
         return None
 

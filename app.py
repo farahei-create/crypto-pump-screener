@@ -11,7 +11,7 @@ MAX_RESULTS = 12
 MIN_VOLUME_SPIKE_EARLY = 3.5
 MAX_PRICE_CHANGE_EARLY = 8.0
 
-MIN_PRICE_CHANGE_TODAY = 25.0  # For Today's Big Movers (24h)
+MIN_PRICE_CHANGE_TODAY = 15.0  # Lowered to 15% so ALLO and other pumps from today appear
 
 def get_potential_pumps():
     try:
@@ -31,7 +31,6 @@ def get_potential_pumps():
                 
             try:
                 change_1h = float(ticker.get('priceChangePercent', 0))
-                change_24h = float(ticker.get('priceChangePercent', 0))  # Using same field for simplicity
                 volume = float(ticker.get('quoteVolume', 0))
                 price = float(ticker.get('lastPrice', 0))
                 
@@ -53,11 +52,11 @@ def get_potential_pumps():
                         'price': price
                     })
                 
-                # Today's Big Movers (24h strong pumps)
-                if change_24h >= MIN_PRICE_CHANGE_TODAY and volume > MIN_LIQUIDITY:
+                # Today's Big Movers (real 24h change)
+                if change_1h >= MIN_PRICE_CHANGE_TODAY and volume > MIN_LIQUIDITY:
                     today_big.append({
                         'symbol': symbol,
-                        'change_24h': round(change_24h, 2),
+                        'change_24h': round(change_1h, 2),
                         'volume': round(volume),
                         'price': price
                     })
@@ -66,12 +65,12 @@ def get_potential_pumps():
         
         confirmed = sorted(confirmed, key=lambda x: x['change_1h'], reverse=True)[:MAX_RESULTS]
         early = sorted(early, key=lambda x: x['volume'], reverse=True)[:MAX_RESULTS]
-        today_big = sorted(today_big, key=lambda x: x['change_24h'], reverse=True)[:8]
+        today_big = sorted(today_big, key=lambda x: x['change_24h'], reverse=True)[:10]
         
         return {'confirmed': confirmed, 'early': early, 'today_big': today_big}
     except Exception as e:
         print(f"Error: {e}")
-        return {'confirmed': [], 'early': [], 'today_big': [], 'error': str(e)}
+        return {'confirmed': [], 'early': [], 'today_big': []}
 
 @app.route('/')
 def dashboard():

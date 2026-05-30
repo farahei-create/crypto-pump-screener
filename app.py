@@ -1,18 +1,17 @@
 from flask import Flask, render_template, jsonify
 import requests
 import os
-from datetime import datetime
 
 app = Flask(__name__)
 
-MIN_PRICE_CHANGE_CONFIRMED = 8.0
-MIN_LIQUIDITY = 20000
+MIN_PRICE_CHANGE_CONFIRMED = 12.0
+MIN_LIQUIDITY = 30000
 MAX_RESULTS = 12
 
-MIN_VOLUME_SPIKE_EARLY = 3.0
+MIN_VOLUME_SPIKE_EARLY = 3.5
 MAX_PRICE_CHANGE_EARLY = 8.0
 
-MIN_PRICE_CHANGE_TODAY = 12.0  # 24h threshold for Today's Big Movers
+MIN_PRICE_CHANGE_TODAY = 25.0  # For Today's Big Movers (24h)
 
 def get_potential_pumps():
     try:
@@ -32,10 +31,11 @@ def get_potential_pumps():
                 
             try:
                 change_1h = float(ticker.get('priceChangePercent', 0))
+                change_24h = float(ticker.get('priceChangePercent', 0))  # Using same field for simplicity
                 volume = float(ticker.get('quoteVolume', 0))
                 price = float(ticker.get('lastPrice', 0))
                 
-                # Confirmed pumps (1h)
+                # Confirmed pumps (last 1h)
                 if change_1h >= MIN_PRICE_CHANGE_CONFIRMED and volume > MIN_LIQUIDITY:
                     confirmed.append({
                         'symbol': symbol,
@@ -53,11 +53,11 @@ def get_potential_pumps():
                         'price': price
                     })
                 
-                # Today's Big Movers (24h) - using priceChangePercent which is 24h
-                if change_1h >= MIN_PRICE_CHANGE_TODAY and volume > MIN_LIQUIDITY:
+                # Today's Big Movers (24h strong pumps)
+                if change_24h >= MIN_PRICE_CHANGE_TODAY and volume > MIN_LIQUIDITY:
                     today_big.append({
                         'symbol': symbol,
-                        'change_24h': round(change_1h, 2),
+                        'change_24h': round(change_24h, 2),
                         'volume': round(volume),
                         'price': price
                     })
@@ -66,22 +66,12 @@ def get_potential_pumps():
         
         confirmed = sorted(confirmed, key=lambda x: x['change_1h'], reverse=True)[:MAX_RESULTS]
         early = sorted(early, key=lambda x: x['volume'], reverse=True)[:MAX_RESULTS]
-        today_big = sorted(today_big, key=lambda x: x['change_24h'], reverse=True)[:10]
+        today_big = sorted(today_big, key=lambda x: x['change_24h'], reverse=True)[:8]
         
-        return {
-            'confirmed': confirmed, 
-            'early': early, 
-            'today_big': today_big,
-            'last_update': datetime.now().strftime('%H:%M:%S')
-        }
+        return {'confirmed': confirmed, 'early': early, 'today_big': today_big}
     except Exception as e:
         print(f"Error: {e}")
-        return {
-            'confirmed': [], 
-            'early': [], 
-            'today_big': [], 
-            'last_update': 'Erreur'
-        }
+        return {'confirmed': [], 'early': [], 'today_big': [], 'error': str(e)}
 
 @app.route('/')
 def dashboard():

@@ -11,7 +11,7 @@ MAX_RESULTS = 12
 MIN_VOLUME_SPIKE_EARLY = 3.5
 MAX_PRICE_CHANGE_EARLY = 8.0
 
-MIN_PRICE_CHANGE_TODAY = 15.0  # Lowered to 15% so ALLO and other pumps from today appear
+MIN_PRICE_CHANGE_TODAY = 0.0  # Lowered to 15% so ALLO and other pumps from today appear
 
 def get_potential_pumps():
     try:

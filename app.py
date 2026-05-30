@@ -50,68 +50,6 @@ def dashboard():
 def strategy_bot_page():
     return render_template('bot.html')
 
-@app.route('/api/analyze', methods=['POST'])
-def analyze_pair():
-    data = request.get_json()
-    symbol = data.get('symbol', '').upper()
-    
-    # Try USDC first, then USDT
-    for suffix in ['USDC', 'USDT']:
-        test_symbol = symbol if symbol.endswith(('USDC', 'USDT')) else symbol + suffix
-        try:
-            url = f"https://api.binance.com/api/v3/ticker/24hr?symbol={test_symbol}"
-            r = requests.get(url, timeout=6)
-            if r.status_code == 200:
-                ticker = r.json()
-                if 'lastPrice' in ticker:
-                    price = float(ticker.get('lastPrice', 0))
-                    change = float(ticker.get('priceChangePercent', 0))
-                    volume = float(ticker.get('quoteVolume', 0))
-                    
-                    score = 0
-                    reasons = []
-                    if change > 12: 
-                        score += 40
-                        reasons.append("Forte hausse")
-                    if volume > 5000000:
-                        score += 25
-                        reasons.append("Volume élevé")
-                    
-                    rec = "LONG" if score > 45 else ("SHORT" if change < -6 else "HOLD")
-                    conf = min(90, max(50, score + 20))
-                    
-                    return jsonify({
-                        'symbol': test_symbol,
-                        'price': round(price, 6),
-                        'change_1h': round(change, 2),
-                        'volume': round(volume),
-                        'volume_spike': 1.0,
-                        'rsi': 50,
-                        'correlation_btc': 0.4,
-                        'recommendation': rec,
-                        'confidence': conf,
-                        'reasons': reasons if reasons else ["Analyse effectuée"],
-                        'ohlcv': []
-                    })
-        except:
-            continue
-    
-    return jsonify({'error': 'Paire non trouvée sur Binance. Essaie BTCUSDT, ETHUSDT, SOLUSDT...'})
-
-@app.route('/api/trade', methods=['POST'])
-def execute_paper_trade():
-    data = request.get_json()
-    # Simple simulation
-    return jsonify({'success': True, 'new_balance': 10000.0})
-
-@app.route('/api/close_all', methods=['POST'])
-def close_all():
-    return jsonify({'success': True, 'new_balance': 10000.0})
-
-@app.route('/api/balance')
-def get_balance():
-    return jsonify({'balance': 10000.0})
-
 @app.route('/api/pumps')
 def api_pumps():
     return jsonify(get_potential_pumps())

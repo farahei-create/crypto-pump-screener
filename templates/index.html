@@ -3,291 +3,212 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>🚀 Pump Screener - Binance Live</title>
+    <title>🚀 Pump Screener</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
-    <script src="https://cdn.jsdelivr.net/npm/ccxt@4.0.83/dist/ccxt.browser.js"></script>
     <style>
         .pump-row { transition: all 0.2s ease; }
-        .pump-row:hover { transform: translateX(5px); background: rgba(255,255,255,0.05); }
-        .star { transition: transform 0.2s ease; cursor: pointer; }
+        .pump-row:hover { transform: translateX(3px); }
+        .star { transition: transform 0.2s ease; }
         .star:hover { transform: scale(1.3); }
-        .nav-tab { transition: all 0.2s ease; cursor: pointer; }
+        .strong-pump { background: linear-gradient(90deg, rgba(16,185,129,0.06) 0%, transparent 100%); }
+        .nav-tab { transition: all 0.2s ease; }
         .nav-tab.active { background: #18181b; color: white; border-bottom: 3px solid #10b981; }
-        .loading-spinner {
-            border: 3px solid #f3f3f3;
-            border-top: 3px solid #10b981;
-            border-radius: 50%;
-            width: 40px;
-            height: 40px;
-            animation: spin 1s linear infinite;
-        }
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
-        .toast {
-            position: fixed;
-            bottom: 20px;
-            right: 20px;
-            background: #18181b;
-            border: 1px solid #10b981;
-            padding: 12px 20px;
-            border-radius: 12px;
-            z-index: 1000;
-            animation: slideIn 0.3s ease-out;
-        }
-        @keyframes slideIn {
-            from { transform: translateX(100%); opacity: 0; }
-            to { transform: translateX(0); opacity: 1; }
-        }
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(10px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-        .fade-in { animation: fadeIn 0.5s ease-in; }
     </style>
 </head>
 <body class="bg-zinc-950 text-white">
-    <div class="max-w-7xl mx-auto px-4 md:px-6 py-6">
+    <div class="max-w-6xl mx-auto px-6 py-8">
         <!-- Header -->
-        <div class="flex flex-col md:flex-row md:items-center justify-between gap-y-4 mb-6 fade-in">
+        <div class="flex flex-col md:flex-row md:items-center justify-between gap-y-4 mb-6">
             <div class="flex items-center gap-x-4">
-                <div class="w-12 h-12 bg-gradient-to-br from-emerald-500 to-teal-400 rounded-2xl flex items-center justify-center shadow-xl shadow-emerald-500/40">
+                <div class="w-11 h-11 bg-gradient-to-br from-emerald-500 to-teal-400 rounded-2xl flex items-center justify-center shadow-xl shadow-emerald-500/40">
                     <i class="fas fa-rocket text-white text-2xl"></i>
                 </div>
                 <div>
-                    <h1 class="text-3xl md:text-4xl font-bold tracking-[-2px] bg-gradient-to-r from-emerald-400 to-teal-400 bg-clip-text text-transparent">
-                        Pump Screener
-                    </h1>
-                    <p class="text-zinc-400 text-xs md:text-sm flex items-center gap-2">
-                        <i class="fas fa-chart-line"></i>
-                        Binance • Real-time Detection
-                    </p>
+                    <h1 class="text-4xl font-bold tracking-[-2px]">Pump Screener</h1>
+                    <p class="text-zinc-400 -mt-1 text-sm">Binance • Early Detection</p>
                 </div>
             </div>
             
             <div class="flex items-center gap-x-3">
-                <button onclick="refreshData()" class="px-4 md:px-5 py-2.5 bg-zinc-900 hover:bg-zinc-800 border border-zinc-700 rounded-3xl text-sm flex items-center gap-x-2 transition-all active:scale-[0.98]">
+                <button onclick="refreshData()" class="px-5 py-2.5 bg-zinc-900 hover:bg-zinc-800 active:bg-zinc-700 border border-zinc-700 rounded-3xl text-sm flex items-center gap-x-2 transition-all active:scale-[0.98]">
                     <i class="fas fa-sync-alt"></i>
-                    <span>Refresh</span>
+                    <span class="font-medium">Refresh</span>
                 </button>
                 
-                <div class="flex items-center bg-zinc-900 border border-zinc-700 rounded-3xl px-3 md:px-4 py-2 text-xs">
+                <div class="flex items-center bg-zinc-900 border border-zinc-700 rounded-3xl px-3 py-2 text-xs">
                     <div class="flex items-center gap-x-2">
                         <div class="w-2 h-2 bg-emerald-400 rounded-full animate-pulse"></div>
-                        <span class="font-mono text-emerald-400 font-semibold">LIVE</span>
+                        <span class="font-mono text-emerald-400">LIVE</span>
                     </div>
                 </div>
+            </div>
+        </div>
+
+        <!-- NAV TABS -->
+        <div class="flex border-b border-zinc-800 mb-8">
+            <a href="/" class="nav-tab active px-8 py-3 font-semibold flex items-center gap-x-2 border-b-2 border-emerald-500 text-white">
+                <i class="fas fa-chart-line"></i>
+                <span>Screener</span>
+            </a>
+            <a href="/bot" class="nav-tab px-8 py-3 font-semibold flex items-center gap-x-2 text-zinc-400 hover:text-white">
+                <i class="fas fa-robot"></i>
+                <span>Strategy Bot</span>
+                <span class="ml-1 text-[10px] px-1.5 py-0.5 bg-emerald-500/20 text-emerald-400 rounded">NEW</span>
+            </a>
+        </div>
+
+        <!-- Controls -->
+        <div class="flex flex-col md:flex-row gap-4 mb-6">
+            <div class="flex-1 relative">
+                <div class="absolute left-4 top-3.5 text-zinc-500"><i class="fas fa-search"></i></div>
+                <input type="text" id="search-input" placeholder="Rechercher une paire..." 
+                       class="w-full bg-zinc-900 border border-zinc-700 focus:border-emerald-500 pl-11 py-3 rounded-3xl text-sm outline-none" onkeyup="filterPairs()">
+            </div>
+            
+            <div class="flex bg-zinc-900 border border-zinc-700 rounded-3xl p-1 text-sm">
+                <button onclick="filterByType('all')" id="filter-all" class="px-5 py-2 rounded-[20px] font-medium transition-colors bg-white text-black">All</button>
+                <button onclick="filterByType('early')" id="filter-early" class="px-5 py-2 rounded-[20px] text-amber-400 hover:bg-zinc-800 transition-colors">Early</button>
+                <button onclick="filterByType('confirmed')" id="filter-confirmed" class="px-5 py-2 rounded-[20px] text-emerald-400 hover:bg-zinc-800 transition-colors">Confirmed</button>
             </div>
         </div>
 
         <!-- Stats -->
-        <div class="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4 mb-6 fade-in">
-            <div class="bg-gradient-to-br from-zinc-900 to-zinc-950 border border-zinc-800 rounded-2xl p-4">
-                <div class="text-zinc-400 text-xs mb-1 flex items-center gap-1">
-                    <i class="fas fa-hourglass-half text-amber-400 text-xs"></i>
-                    EARLY
-                </div>
-                <div class="text-3xl md:text-4xl font-bold text-amber-400" id="early-count">0</div>
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+            <div class="bg-zinc-900 border border-zinc-800 rounded-3xl p-5">
+                <div class="text-zinc-400 text-xs mb-1">EARLY SIGNALS</div>
+                <div class="text-4xl font-semibold text-amber-400">{{ data.early|length }}</div>
             </div>
-            <div class="bg-gradient-to-br from-zinc-900 to-zinc-950 border border-zinc-800 rounded-2xl p-4">
-                <div class="text-zinc-400 text-xs mb-1 flex items-center gap-1">
-                    <i class="fas fa-bolt text-emerald-400 text-xs"></i>
-                    CONFIRMED
-                </div>
-                <div class="text-3xl md:text-4xl font-bold text-emerald-400" id="confirmed-count">0</div>
+            <div class="bg-zinc-900 border border-zinc-800 rounded-3xl p-5">
+                <div class="text-zinc-400 text-xs mb-1">CONFIRMED</div>
+                <div class="text-4xl font-semibold text-emerald-400">{{ data.confirmed|length }}</div>
             </div>
-            <div class="bg-gradient-to-br from-zinc-900 to-zinc-950 border border-zinc-800 rounded-2xl p-4">
-                <div class="text-zinc-400 text-xs mb-1 flex items-center gap-1">
-                    <i class="fas fa-fire text-blue-400 text-xs"></i>
-                    24H PUMPS
-                </div>
-                <div class="text-3xl md:text-4xl font-bold text-blue-400" id="pumps-count">0</div>
+            <div class="bg-zinc-900 border border-zinc-800 rounded-3xl p-5">
+                <div class="text-zinc-400 text-xs mb-1">24H PUMPS</div>
+                <div class="text-4xl font-semibold text-blue-400">{{ data.pumps_24h|length }}</div>
             </div>
-            <div class="bg-gradient-to-br from-zinc-900 to-zinc-950 border border-zinc-800 rounded-2xl p-4">
-                <div class="text-zinc-400 text-[10px] mb-1">REFRESH</div>
-                <div class="flex items-baseline gap-x-1">
-                    <span class="text-3xl md:text-4xl font-bold text-emerald-400" id="countdown">45</span>
-                    <span class="text-xs text-zinc-400">sec</span>
+            <div class="bg-zinc-900 border border-zinc-800 rounded-3xl p-5 flex items-center">
+                <div>
+                    <div class="text-[10px] text-zinc-500">NEXT REFRESH</div>
+                    <div class="flex items-baseline gap-x-1">
+                        <span class="text-3xl font-semibold text-emerald-400" id="countdown">45</span>
+                        <span class="text-xs text-zinc-400">sec</span>
+                    </div>
                 </div>
             </div>
         </div>
 
-        <!-- Search & Filter -->
-        <div class="flex flex-col md:flex-row gap-3 mb-6">
-            <div class="flex-1 relative">
-                <div class="absolute left-4 top-3.5 text-zinc-500"><i class="fas fa-search text-sm"></i></div>
-                <input type="text" id="search-input" placeholder="Rechercher une paire (BTC, ETH, SOL)..." 
-                       class="w-full bg-zinc-900 border border-zinc-700 focus:border-emerald-500 pl-10 py-3 rounded-3xl text-sm outline-none">
+        <!-- Early Accumulation -->
+        <div class="mb-10" id="early-section">
+            <div class="flex items-center justify-between mb-4 px-1">
+                <div class="flex items-center gap-x-3">
+                    <div class="px-4 py-1.5 bg-amber-500/10 text-amber-400 text-xs font-semibold rounded-3xl flex items-center gap-x-2">
+                        <i class="fas fa-search"></i>
+                        <span>EARLY ACCUMULATION</span>
+                    </div>
+                    <span class="text-xs text-zinc-500">Volume fort + prix calme</span>
+                </div>
             </div>
             
-            <div class="flex bg-zinc-900 border border-zinc-700 rounded-3xl p-1 text-sm">
-                <button onclick="filterByType('all')" id="filter-all" class="px-4 md:px-5 py-2 rounded-[20px] font-medium transition-colors bg-white text-black">All</button>
-                <button onclick="filterByType('early')" id="filter-early" class="px-4 md:px-5 py-2 rounded-[20px] text-amber-400">Early</button>
-                <button onclick="filterByType('confirmed')" id="filter-confirmed" class="px-4 md:px-5 py-2 rounded-[20px] text-emerald-400">Confirmed</button>
+            <div class="bg-zinc-900 border border-zinc-800 rounded-3xl overflow-hidden">
+                {% if data.early %}
+                <table class="w-full" id="early-table">
+                    <thead>
+                        <tr class="border-b border-zinc-800 text-xs text-zinc-400">
+                            <th class="px-6 py-4 w-8"></th>
+                            <th class="px-6 py-4 font-normal">Paire</th>
+                            <th class="px-6 py-4 font-normal text-right">Hausse</th>
+                            <th class="px-6 py-4 font-normal text-right">Volume</th>
+                            <th class="px-6 py-4 font-normal text-right">Prix</th>
+                            <th class="px-6 py-4 font-normal w-16"></th>
+                        </tr>
+                    </thead>
+                    <tbody class="text-sm divide-y divide-zinc-800">
+                        {% for pump in data.early %}
+                        <tr class="pump-row hover:bg-zinc-800/50" data-symbol="{{ pump.symbol }}" data-type="early">
+                            <td class="px-4 py-4">
+                                <i class="fas fa-star star text-zinc-600 hover:text-amber-400 cursor-pointer" onclick="toggleFavorite('{{ pump.symbol }}', this)"></i>
+                            </td>
+                            <td class="px-6 py-4 font-mono font-semibold">{{ pump.symbol }}</td>
+                            <td class="px-6 py-4 text-right">
+                                <span class="px-3.5 py-1 rounded-2xl text-xs font-semibold bg-amber-500/10 text-amber-400">+{{ pump.change_1h }}%</span>
+                            </td>
+                            <td class="px-6 py-4 text-right font-mono text-zinc-300">${{ "{:,}".format(pump.volume|int) }}</td>
+                            <td class="px-6 py-4 text-right font-mono text-zinc-300">{{ pump.price }}</td>
+                            <td class="px-6 py-4">
+                                <a href="https://www.binance.com/en/trade/{{ pump.symbol }}?layout=pro" target="_blank" class="text-zinc-400 hover:text-white transition-colors">
+                                    <i class="fas fa-external-link-alt"></i>
+                                </a>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+                {% else %}
+                <div class="px-6 py-9 text-center text-zinc-400 text-sm">Aucun signal d'accumulation pour le moment</div>
+                {% endif %}
             </div>
         </div>
 
-        <!-- Loading -->
-        <div id="loading" class="hidden fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-            <div class="bg-zinc-900 rounded-2xl p-8 flex flex-col items-center gap-4">
-                <div class="loading-spinner"></div>
-                <p class="text-sm">Chargement des données Binance...</p>
-            </div>
-        </div>
-
-        <!-- Results -->
-        <div id="early-section" class="mb-8">
-            <div class="flex items-center gap-x-3 mb-3 px-1">
-                <div class="px-3 py-1 bg-amber-500/10 text-amber-400 text-xs font-semibold rounded-3xl flex items-center gap-x-2">
-                    <i class="fas fa-search"></i>
-                    <span>EARLY ACCUMULATION</span>
-                </div>
-            </div>
-            <div class="bg-zinc-900 border border-zinc-800 rounded-3xl overflow-hidden" id="early-container"></div>
-        </div>
-
+        <!-- Confirmed Pumps -->
         <div id="confirmed-section">
-            <div class="flex items-center gap-x-3 mb-3 px-1">
-                <div class="px-3 py-1 bg-emerald-500/10 text-emerald-400 text-xs font-semibold rounded-3xl flex items-center gap-x-2">
-                    <i class="fas fa-bolt"></i>
-                    <span>CONFIRMED PUMPS</span>
+            <div class="flex items-center justify-between mb-4 px-1">
+                <div class="flex items-center gap-x-3">
+                    <div class="px-4 py-1.5 bg-emerald-500/10 text-emerald-400 text-xs font-semibold rounded-3xl flex items-center gap-x-2">
+                        <i class="fas fa-bolt"></i>
+                        <span>CONFIRMED PUMPS</span>
+                    </div>
+                    <span class="text-xs text-zinc-500">Déjà en mouvement</span>
                 </div>
             </div>
-            <div class="bg-zinc-900 border border-zinc-800 rounded-3xl overflow-hidden" id="confirmed-container"></div>
+            
+            <div class="bg-zinc-900 border border-zinc-800 rounded-3xl overflow-hidden">
+                {% if data.confirmed %}
+                <table class="w-full" id="confirmed-table">
+                    <thead>
+                        <tr class="border-b border-zinc-800 text-xs text-zinc-400">
+                            <th class="px-6 py-4 w-8"></th>
+                            <th class="px-6 py-4 font-normal">Paire</th>
+                            <th class="px-6 py-4 font-normal text-right">Hausse</th>
+                            <th class="px-6 py-4 font-normal text-right">Volume</th>
+                            <th class="px-6 py-4 font-normal text-right">Prix</th>
+                            <th class="px-6 py-4 font-normal w-16"></th>
+                        </tr>
+                    </thead>
+                    <tbody class="text-sm divide-y divide-zinc-800">
+                        {% for pump in data.confirmed %}
+                        <tr class="pump-row hover:bg-zinc-800/50 {% if pump.change_1h > 25 %}strong-pump{% endif %}" data-symbol="{{ pump.symbol }}" data-type="confirmed">
+                            <td class="px-4 py-4">
+                                <i class="fas fa-star star text-zinc-600 hover:text-amber-400 cursor-pointer" onclick="toggleFavorite('{{ pump.symbol }}', this)"></i>
+                            </td>
+                            <td class="px-6 py-4 font-mono font-semibold">{{ pump.symbol }}</td>
+                            <td class="px-6 py-4 text-right">
+                                <span class="px-3.5 py-1 rounded-2xl text-xs font-semibold {% if pump.change_1h > 25 %}bg-emerald-500 text-white{% else %}bg-emerald-500/10 text-emerald-400{% endif %}">+{{ pump.change_1h }}%</span>
+                            </td>
+                            <td class="px-6 py-4 text-right font-mono text-zinc-300">${{ "{:,}".format(pump.volume|int) }}</td>
+                            <td class="px-6 py-4 text-right font-mono text-zinc-300">{{ pump.price }}</td>
+                            <td class="px-6 py-4">
+                                <a href="https://www.binance.com/en/trade/{{ pump.symbol }}?layout=pro" target="_blank" class="text-zinc-400 hover:text-white transition-colors">
+                                    <i class="fas fa-external-link-alt"></i>
+                                </a>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+                {% else %}
+                <div class="px-6 py-9 text-center text-zinc-400 text-sm">Aucun pump confirmé pour le moment</div>
+                {% endif %}
+            </div>
         </div>
 
         <div class="mt-6 text-center text-[10px] text-zinc-500">
-            <i class="fas fa-chart-line"></i> Données en temps réel • Binance
+            Appuie sur <span class="font-mono bg-zinc-900 px-1.5 py-0.5 rounded">R</span> pour rafraîchir • Données Binance
         </div>
     </div>
 
     <script>
-        let currentData = { early: [], confirmed: [] };
-        let countdown = 45;
-        let countdownInterval;
-        let currentFilter = 'all';
         let favorites = JSON.parse(localStorage.getItem('pumpFavorites') || '[]');
-
-        // Initialiser Binance avec CCXT
-        const exchange = new ccxt.binance();
-        
-        async function loadData() {
-            try {
-                document.getElementById('loading').classList.remove('hidden');
-                
-                // Récupérer les tickers
-                const tickers = await exchange.fetchTickers();
-                const usdtPairs = [];
-                
-                for (const [symbol, ticker] of Object.entries(tickers)) {
-                    if (symbol.endsWith('/USDT') && ticker.quoteVolume && ticker.quoteVolume > 500000) {
-                        usdtPairs.push({
-                            symbol: symbol.replace('/USDT', ''),
-                            change_1h: ticker.percentage || 0,
-                            volume: ticker.quoteVolume,
-                            price: ticker.last,
-                            high: ticker.high,
-                            low: ticker.low
-                        });
-                    }
-                }
-                
-                // Trier par volume
-                usdtPairs.sort((a, b) => b.volume - a.volume);
-                
-                const early = [];
-                const confirmed = [];
-                
-                for (const pair of usdtPairs.slice(0, 150)) {
-                    const change = pair.change_1h;
-                    const volume = pair.volume;
-                    
-                    if (volume > 1000000 && change >= 0.5 && change <= 4) {
-                        early.push({
-                            symbol: pair.symbol,
-                            change_1h: change.toFixed(2),
-                            volume: volume,
-                            price: pair.price < 1 ? pair.price.toFixed(8) : pair.price.toFixed(4)
-                        });
-                    } else if (change >= 4.5) {
-                        confirmed.push({
-                            symbol: pair.symbol,
-                            change_1h: change.toFixed(2),
-                            volume: volume,
-                            price: pair.price < 1 ? pair.price.toFixed(8) : pair.price.toFixed(4)
-                        });
-                    }
-                }
-                
-                currentData = {
-                    early: early.slice(0, 15),
-                    confirmed: confirmed.slice(0, 20),
-                    pumps_24h: confirmed.slice(0, 10)
-                };
-                
-                updateUI();
-                showToast('✅ Données mises à jour', 'success');
-                
-            } catch (error) {
-                console.error('Erreur:', error);
-                showToast('❌ Erreur de connexion Binance', 'error');
-            } finally {
-                document.getElementById('loading').classList.add('hidden');
-            }
-        }
-        
-        function updateUI() {
-            document.getElementById('early-count').textContent = currentData.early.length;
-            document.getElementById('confirmed-count').textContent = currentData.confirmed.length;
-            document.getElementById('pumps-count').textContent = currentData.pumps_24h.length;
-            
-            updateTable('early-container', currentData.early, 'early');
-            updateTable('confirmed-container', currentData.confirmed, 'confirmed');
-            
-            filterByType(currentFilter);
-        }
-        
-        function updateTable(containerId, items, type) {
-            const container = document.getElementById(containerId);
-            if (!items || items.length === 0) {
-                container.innerHTML = '<div class="px-6 py-9 text-center text-zinc-400 text-sm"><i class="fas fa-inbox mr-2"></i>Aucun signal</div>';
-                return;
-            }
-            
-            let html = '<div class="divide-y divide-zinc-800">';
-            for (const item of items) {
-                const isFavorite = favorites.includes(item.symbol);
-                html += `
-                    <div class="pump-row flex items-center justify-between p-4 hover:bg-zinc-800/50" data-symbol="${item.symbol}" data-type="${type}">
-                        <div class="flex items-center gap-3 flex-1">
-                            <i class="fas fa-star star ${isFavorite ? 'text-amber-400' : 'text-zinc-600'}" 
-                               onclick="toggleFavorite('${item.symbol}', this)"></i>
-                            <span class="font-mono font-semibold text-sm">${item.symbol}</span>
-                        </div>
-                        <div class="flex items-center gap-4 flex-1 justify-end">
-                            <span class="px-3 py-1 rounded-2xl text-xs font-semibold ${type === 'early' ? 'bg-amber-500/10 text-amber-400' : 'bg-emerald-500/10 text-emerald-400'}">
-                                +${item.change_1h}%
-                            </span>
-                            <span class="text-xs text-zinc-400 font-mono">$${formatNumber(item.volume)}</span>
-                            <span class="text-xs text-zinc-300 font-mono">${item.price}</span>
-                            <a href="https://www.binance.com/en/trade/${item.symbol}_USDT" target="_blank" class="text-zinc-500 hover:text-white">
-                                <i class="fas fa-external-link-alt text-xs"></i>
-                            </a>
-                        </div>
-                    </div>
-                `;
-            }
-            html += '</div>';
-            container.innerHTML = html;
-        }
-        
-        function formatNumber(num) {
-            if (num >= 1000000) return (num / 1000000).toFixed(1) + 'M';
-            if (num >= 1000) return (num / 1000).toFixed(1) + 'K';
-            return num.toFixed(0);
-        }
         
         function toggleFavorite(symbol, element) {
             if (favorites.includes(symbol)) {
@@ -302,71 +223,75 @@
             localStorage.setItem('pumpFavorites', JSON.stringify(favorites));
         }
         
-        function showToast(message, type) {
-            const toast = document.createElement('div');
-            toast.className = 'toast';
-            toast.innerHTML = `<div class="flex items-center gap-2"><i class="fas ${type === 'success' ? 'fa-check-circle text-emerald-400' : 'fa-exclamation-circle text-red-400'}"></i><span class="text-sm">${message}</span></div>`;
-            document.body.appendChild(toast);
-            setTimeout(() => toast.remove(), 3000);
+        function updateFavorites() {
+            document.querySelectorAll('.star').forEach(star => {
+                const symbol = star.closest('tr').dataset.symbol;
+                if (favorites.includes(symbol)) {
+                    star.classList.add('text-amber-400');
+                    star.classList.remove('text-zinc-600');
+                }
+            });
         }
         
-        function refreshData() {
-            loadData();
-            resetCountdown();
-        }
-        
-        function resetCountdown() {
-            countdown = 45;
-            if (countdownInterval) clearInterval(countdownInterval);
-            startCountdown();
-        }
+        let countdown = 45;
+        const countdownEl = document.getElementById('countdown');
         
         function startCountdown() {
-            countdownInterval = setInterval(() => {
+            const interval = setInterval(() => {
                 countdown--;
-                document.getElementById('countdown').textContent = countdown;
+                if (countdownEl) countdownEl.textContent = countdown;
                 if (countdown <= 0) {
-                    clearInterval(countdownInterval);
-                    refreshData();
+                    clearInterval(interval);
+                    window.location.reload();
                 }
             }, 1000);
         }
         
+        function refreshData() {
+            window.location.reload();
+        }
+        
         function filterPairs() {
-            const term = document.getElementById('search-input').value.toUpperCase();
+            const term = document.getElementById('search-input').value.toUpperCase().trim();
             document.querySelectorAll('.pump-row').forEach(row => {
                 const symbol = row.dataset.symbol || '';
-                row.style.display = symbol.includes(term) ? '' : 'none';
+                if (symbol.toUpperCase().includes(term)) {
+                    row.style.display = '';
+                } else {
+                    row.style.display = 'none';
+                }
             });
         }
         
+        let currentFilter = 'all';
         function filterByType(type) {
             currentFilter = type;
-            const earlySection = document.getElementById('early-section');
-            const confirmedSection = document.getElementById('confirmed-section');
+            document.querySelectorAll('[id^="filter-"]').forEach(b => b.classList.remove('bg-white', 'text-black'));
+            const btn = document.getElementById('filter-' + type);
+            if (btn) btn.classList.add('bg-white', 'text-black');
             
-            document.querySelectorAll('[id^="filter-"]').forEach(b => {
-                b.classList.remove('bg-white', 'text-black');
-            });
-            document.getElementById(`filter-${type}`).classList.add('bg-white', 'text-black');
+            const early = document.getElementById('early-section');
+            const confirmed = document.getElementById('confirmed-section');
             
-            if (type === 'all') {
-                earlySection.style.display = '';
-                confirmedSection.style.display = '';
-            } else if (type === 'early') {
-                earlySection.style.display = '';
-                confirmedSection.style.display = 'none';
-            } else {
-                earlySection.style.display = 'none';
-                confirmedSection.style.display = '';
-            }
+            if (type === 'all') { early.style.display = ''; confirmed.style.display = ''; }
+            else if (type === 'early') { early.style.display = ''; confirmed.style.display = 'none'; }
+            else if (type === 'confirmed') { early.style.display = 'none'; confirmed.style.display = ''; }
         }
         
-        document.getElementById('search-input').addEventListener('keyup', filterPairs);
-        
-        // Démarrer
-        loadData();
-        startCountdown();
+        window.onload = function() {
+            startCountdown();
+            updateFavorites();
+            
+            const allBtn = document.getElementById('filter-all');
+            if (allBtn) allBtn.classList.add('bg-white', 'text-black');
+            
+            document.addEventListener('keydown', e => {
+                if ((e.key === 'r' || e.key === 'R') && document.activeElement.tagName !== 'INPUT') {
+                    e.preventDefault();
+                    refreshData();
+                }
+            });
+        };
     </script>
 </body>
 </html>

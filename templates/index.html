@@ -3,30 +3,95 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>🚀 Pump Screener</title>
+    <title>🚀 Pump Screener - Binance Live Detection</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <style>
+        * {
+            user-select: none;
+        }
         .pump-row { transition: all 0.2s ease; }
-        .pump-row:hover { transform: translateX(3px); }
-        .star { transition: transform 0.2s ease; }
+        .pump-row:hover { transform: translateX(5px); background: rgba(255,255,255,0.05); }
+        .star { transition: transform 0.2s ease; cursor: pointer; }
         .star:hover { transform: scale(1.3); }
-        .strong-pump { background: linear-gradient(90deg, rgba(16,185,129,0.06) 0%, transparent 100%); }
-        .nav-tab { transition: all 0.2s ease; }
+        .strong-pump { background: linear-gradient(90deg, rgba(16,185,129,0.15) 0%, transparent 100%); }
+        .nav-tab { transition: all 0.2s ease; cursor: pointer; }
         .nav-tab.active { background: #18181b; color: white; border-bottom: 3px solid #10b981; }
+        .blink {
+            animation: blink 1s infinite;
+        }
+        @keyframes blink {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+        .fade-in {
+            animation: fadeIn 0.5s ease-in;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #18181b;
+            border-radius: 10px;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #3f3f46;
+            border-radius: 10px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #52525b;
+        }
+        .toast {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background: #18181b;
+            border: 1px solid #10b981;
+            padding: 12px 20px;
+            border-radius: 12px;
+            z-index: 1000;
+            animation: slideIn 0.3s ease-out;
+        }
+        @keyframes slideIn {
+            from { transform: translateX(100%); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
+        }
+        .loading-spinner {
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #10b981;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
     </style>
 </head>
 <body class="bg-zinc-950 text-white">
-    <div class="max-w-6xl mx-auto px-6 py-8">
+    <div class="max-w-7xl mx-auto px-6 py-8">
         <!-- Header -->
-        <div class="flex flex-col md:flex-row md:items-center justify-between gap-y-4 mb-6">
+        <div class="flex flex-col md:flex-row md:items-center justify-between gap-y-4 mb-6 fade-in">
             <div class="flex items-center gap-x-4">
-                <div class="w-11 h-11 bg-gradient-to-br from-emerald-500 to-teal-400 rounded-2xl flex items-center justify-center shadow-xl shadow-emerald-500/40">
+                <div class="w-12 h-12 bg-gradient-to-br from-emerald-500 to-teal-400 rounded-2xl flex items-center justify-center shadow-xl shadow-emerald-500/40">
                     <i class="fas fa-rocket text-white text-2xl"></i>
                 </div>
                 <div>
-                    <h1 class="text-4xl font-bold tracking-[-2px]">Pump Screener</h1>
-                    <p class="text-zinc-400 -mt-1 text-sm">Binance • Early Detection</p>
+                    <h1 class="text-4xl font-bold tracking-[-2px] bg-gradient-to-r from-emerald-400 to-teal-400 bg-clip-text text-transparent">
+                        Pump Screener
+                    </h1>
+                    <p class="text-zinc-400 -mt-1 text-sm flex items-center gap-2">
+                        <i class="fas fa-chart-line"></i>
+                        Binance • Real-time Detection
+                        <span class="text-xs px-2 py-0.5 bg-emerald-500/20 rounded-full">v2.0</span>
+                    </p>
                 </div>
             </div>
             
@@ -36,10 +101,10 @@
                     <span class="font-medium">Refresh</span>
                 </button>
                 
-                <div class="flex items-center bg-zinc-900 border border-zinc-700 rounded-3xl px-3 py-2 text-xs">
+                <div class="flex items-center bg-zinc-900 border border-zinc-700 rounded-3xl px-4 py-2 text-xs">
                     <div class="flex items-center gap-x-2">
                         <div class="w-2 h-2 bg-emerald-400 rounded-full animate-pulse"></div>
-                        <span class="font-mono text-emerald-400">LIVE</span>
+                        <span class="font-mono text-emerald-400 font-semibold">LIVE</span>
                     </div>
                 </div>
             </div>
@@ -47,168 +112,295 @@
 
         <!-- NAV TABS -->
         <div class="flex border-b border-zinc-800 mb-8">
-            <a href="/" class="nav-tab active px-8 py-3 font-semibold flex items-center gap-x-2 border-b-2 border-emerald-500 text-white">
+            <div class="nav-tab active px-8 py-3 font-semibold flex items-center gap-x-2" onclick="switchTab('screener')">
                 <i class="fas fa-chart-line"></i>
                 <span>Screener</span>
-            </a>
-            <a href="/bot" class="nav-tab px-8 py-3 font-semibold flex items-center gap-x-2 text-zinc-400 hover:text-white">
+            </div>
+            <div class="nav-tab px-8 py-3 font-semibold flex items-center gap-x-2 text-zinc-400 hover:text-white" onclick="switchTab('bot')">
                 <i class="fas fa-robot"></i>
                 <span>Strategy Bot</span>
-                <span class="ml-1 text-[10px] px-1.5 py-0.5 bg-emerald-500/20 text-emerald-400 rounded">NEW</span>
-            </a>
-        </div>
-
-        <!-- Controls -->
-        <div class="flex flex-col md:flex-row gap-4 mb-6">
-            <div class="flex-1 relative">
-                <div class="absolute left-4 top-3.5 text-zinc-500"><i class="fas fa-search"></i></div>
-                <input type="text" id="search-input" placeholder="Rechercher une paire..." 
-                       class="w-full bg-zinc-900 border border-zinc-700 focus:border-emerald-500 pl-11 py-3 rounded-3xl text-sm outline-none" onkeyup="filterPairs()">
-            </div>
-            
-            <div class="flex bg-zinc-900 border border-zinc-700 rounded-3xl p-1 text-sm">
-                <button onclick="filterByType('all')" id="filter-all" class="px-5 py-2 rounded-[20px] font-medium transition-colors bg-white text-black">All</button>
-                <button onclick="filterByType('early')" id="filter-early" class="px-5 py-2 rounded-[20px] text-amber-400 hover:bg-zinc-800 transition-colors">Early</button>
-                <button onclick="filterByType('confirmed')" id="filter-confirmed" class="px-5 py-2 rounded-[20px] text-emerald-400 hover:bg-zinc-800 transition-colors">Confirmed</button>
+                <span class="ml-1 text-[10px] px-1.5 py-0.5 bg-emerald-500/20 text-emerald-400 rounded">BETA</span>
             </div>
         </div>
 
-        <!-- Stats -->
-        <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
-            <div class="bg-zinc-900 border border-zinc-800 rounded-3xl p-5">
-                <div class="text-zinc-400 text-xs mb-1">EARLY SIGNALS</div>
-                <div class="text-4xl font-semibold text-amber-400">{{ data.early|length }}</div>
-            </div>
-            <div class="bg-zinc-900 border border-zinc-800 rounded-3xl p-5">
-                <div class="text-zinc-400 text-xs mb-1">CONFIRMED</div>
-                <div class="text-4xl font-semibold text-emerald-400">{{ data.confirmed|length }}</div>
-            </div>
-            <div class="bg-zinc-900 border border-zinc-800 rounded-3xl p-5">
-                <div class="text-zinc-400 text-xs mb-1">24H PUMPS</div>
-                <div class="text-4xl font-semibold text-blue-400">{{ data.pumps_24h|length }}</div>
-            </div>
-            <div class="bg-zinc-900 border border-zinc-800 rounded-3xl p-5 flex items-center">
-                <div>
-                    <div class="text-[10px] text-zinc-500">NEXT REFRESH</div>
+        <!-- Tab Screener -->
+        <div id="screener-tab">
+            <!-- Stats -->
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8 fade-in">
+                <div class="bg-gradient-to-br from-zinc-900 to-zinc-950 border border-zinc-800 rounded-3xl p-5 hover:border-emerald-500/50 transition-all">
+                    <div class="text-zinc-400 text-xs mb-1 flex items-center gap-2">
+                        <i class="fas fa-hourglass-half text-amber-400"></i>
+                        EARLY SIGNALS
+                    </div>
+                    <div class="text-4xl font-bold text-amber-400" id="early-count">0</div>
+                    <div class="text-[10px] text-zinc-500 mt-1">Volume spike detected</div>
+                </div>
+                <div class="bg-gradient-to-br from-zinc-900 to-zinc-950 border border-zinc-800 rounded-3xl p-5 hover:border-emerald-500/50 transition-all">
+                    <div class="text-zinc-400 text-xs mb-1 flex items-center gap-2">
+                        <i class="fas fa-bolt text-emerald-400"></i>
+                        CONFIRMED
+                    </div>
+                    <div class="text-4xl font-bold text-emerald-400" id="confirmed-count">0</div>
+                    <div class="text-[10px] text-zinc-500 mt-1">Moving strongly</div>
+                </div>
+                <div class="bg-gradient-to-br from-zinc-900 to-zinc-950 border border-zinc-800 rounded-3xl p-5 hover:border-emerald-500/50 transition-all">
+                    <div class="text-zinc-400 text-xs mb-1 flex items-center gap-2">
+                        <i class="fas fa-fire text-blue-400"></i>
+                        24H PUMPS
+                    </div>
+                    <div class="text-4xl font-bold text-blue-400" id="pumps-count">0</div>
+                    <div class="text-[10px] text-zinc-500 mt-1">+15% in 24h</div>
+                </div>
+                <div class="bg-gradient-to-br from-zinc-900 to-zinc-950 border border-zinc-800 rounded-3xl p-5">
+                    <div class="text-zinc-400 text-[10px] mb-1">NEXT REFRESH</div>
                     <div class="flex items-baseline gap-x-1">
-                        <span class="text-3xl font-semibold text-emerald-400" id="countdown">45</span>
+                        <span class="text-4xl font-bold text-emerald-400" id="countdown">45</span>
                         <span class="text-xs text-zinc-400">sec</span>
                     </div>
+                    <div class="text-[9px] text-zinc-600 mt-1" id="last-update">--:--:--</div>
                 </div>
             </div>
-        </div>
 
-        <!-- Early Accumulation -->
-        <div class="mb-10" id="early-section">
-            <div class="flex items-center justify-between mb-4 px-1">
-                <div class="flex items-center gap-x-3">
-                    <div class="px-4 py-1.5 bg-amber-500/10 text-amber-400 text-xs font-semibold rounded-3xl flex items-center gap-x-2">
-                        <i class="fas fa-search"></i>
-                        <span>EARLY ACCUMULATION</span>
+            <!-- Controls -->
+            <div class="flex flex-col md:flex-row gap-4 mb-6">
+                <div class="flex-1 relative">
+                    <div class="absolute left-4 top-3.5 text-zinc-500"><i class="fas fa-search"></i></div>
+                    <input type="text" id="search-input" placeholder="Rechercher une paire (ex: BTC, ETH, SOL)..." 
+                           class="w-full bg-zinc-900 border border-zinc-700 focus:border-emerald-500 pl-11 py-3 rounded-3xl text-sm outline-none transition-all">
+                </div>
+                
+                <div class="flex bg-zinc-900 border border-zinc-700 rounded-3xl p-1 text-sm">
+                    <button onclick="filterByType('all')" id="filter-all" class="px-5 py-2 rounded-[20px] font-medium transition-colors bg-white text-black">All</button>
+                    <button onclick="filterByType('early')" id="filter-early" class="px-5 py-2 rounded-[20px] text-amber-400 hover:bg-zinc-800 transition-colors">
+                        <i class="fas fa-clock"></i> Early
+                    </button>
+                    <button onclick="filterByType('confirmed')" id="filter-confirmed" class="px-5 py-2 rounded-[20px] text-emerald-400 hover:bg-zinc-800 transition-colors">
+                        <i class="fas fa-chart-line"></i> Confirmed
+                    </button>
+                </div>
+            </div>
+
+            <!-- Loading State -->
+            <div id="loading" class="hidden fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+                <div class="bg-zinc-900 rounded-2xl p-8 flex flex-col items-center gap-4">
+                    <div class="loading-spinner"></div>
+                    <p class="text-sm">Récupération des données Binance...</p>
+                </div>
+            </div>
+
+            <!-- Early Accumulation -->
+            <div class="mb-10" id="early-section">
+                <div class="flex items-center justify-between mb-4 px-1">
+                    <div class="flex items-center gap-x-3">
+                        <div class="px-4 py-1.5 bg-amber-500/10 text-amber-400 text-xs font-semibold rounded-3xl flex items-center gap-x-2">
+                            <i class="fas fa-search"></i>
+                            <span>EARLY ACCUMULATION</span>
+                        </div>
+                        <span class="text-xs text-zinc-500"><i class="fas fa-chart-simple"></i> Volume fort + prix calme</span>
                     </div>
-                    <span class="text-xs text-zinc-500">Volume fort + prix calme</span>
                 </div>
+                
+                <div class="bg-zinc-900 border border-zinc-800 rounded-3xl overflow-hidden" id="early-container"></div>
             </div>
-            
-            <div class="bg-zinc-900 border border-zinc-800 rounded-3xl overflow-hidden">
-                {% if data.early %}
-                <table class="w-full" id="early-table">
-                    <thead>
-                        <tr class="border-b border-zinc-800 text-xs text-zinc-400">
-                            <th class="px-6 py-4 w-8"></th>
-                            <th class="px-6 py-4 font-normal">Paire</th>
-                            <th class="px-6 py-4 font-normal text-right">Hausse</th>
-                            <th class="px-6 py-4 font-normal text-right">Volume</th>
-                            <th class="px-6 py-4 font-normal text-right">Prix</th>
-                            <th class="px-6 py-4 font-normal w-16"></th>
-                        </tr>
-                    </thead>
-                    <tbody class="text-sm divide-y divide-zinc-800">
-                        {% for pump in data.early %}
-                        <tr class="pump-row hover:bg-zinc-800/50" data-symbol="{{ pump.symbol }}" data-type="early">
-                            <td class="px-4 py-4">
-                                <i class="fas fa-star star text-zinc-600 hover:text-amber-400 cursor-pointer" onclick="toggleFavorite('{{ pump.symbol }}', this)"></i>
-                            </td>
-                            <td class="px-6 py-4 font-mono font-semibold">{{ pump.symbol }}</td>
-                            <td class="px-6 py-4 text-right">
-                                <span class="px-3.5 py-1 rounded-2xl text-xs font-semibold bg-amber-500/10 text-amber-400">+{{ pump.change_1h }}%</span>
-                            </td>
-                            <td class="px-6 py-4 text-right font-mono text-zinc-300">${{ "{:,}".format(pump.volume|int) }}</td>
-                            <td class="px-6 py-4 text-right font-mono text-zinc-300">{{ pump.price }}</td>
-                            <td class="px-6 py-4">
-                                <a href="https://www.binance.com/en/trade/{{ pump.symbol }}?layout=pro" target="_blank" class="text-zinc-400 hover:text-white transition-colors">
-                                    <i class="fas fa-external-link-alt"></i>
-                                </a>
-                            </td>
-                        </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
-                {% else %}
-                <div class="px-6 py-9 text-center text-zinc-400 text-sm">Aucun signal d'accumulation pour le moment</div>
-                {% endif %}
-            </div>
-        </div>
 
-        <!-- Confirmed Pumps -->
-        <div id="confirmed-section">
-            <div class="flex items-center justify-between mb-4 px-1">
-                <div class="flex items-center gap-x-3">
-                    <div class="px-4 py-1.5 bg-emerald-500/10 text-emerald-400 text-xs font-semibold rounded-3xl flex items-center gap-x-2">
-                        <i class="fas fa-bolt"></i>
-                        <span>CONFIRMED PUMPS</span>
+            <!-- Confirmed Pumps -->
+            <div id="confirmed-section">
+                <div class="flex items-center justify-between mb-4 px-1">
+                    <div class="flex items-center gap-x-3">
+                        <div class="px-4 py-1.5 bg-emerald-500/10 text-emerald-400 text-xs font-semibold rounded-3xl flex items-center gap-x-2">
+                            <i class="fas fa-bolt"></i>
+                            <span>CONFIRMED PUMPS</span>
+                        </div>
+                        <span class="text-xs text-zinc-500"><i class="fas fa-rocket"></i> Déjà en mouvement</span>
                     </div>
-                    <span class="text-xs text-zinc-500">Déjà en mouvement</span>
                 </div>
-            </div>
-            
-            <div class="bg-zinc-900 border border-zinc-800 rounded-3xl overflow-hidden">
-                {% if data.confirmed %}
-                <table class="w-full" id="confirmed-table">
-                    <thead>
-                        <tr class="border-b border-zinc-800 text-xs text-zinc-400">
-                            <th class="px-6 py-4 w-8"></th>
-                            <th class="px-6 py-4 font-normal">Paire</th>
-                            <th class="px-6 py-4 font-normal text-right">Hausse</th>
-                            <th class="px-6 py-4 font-normal text-right">Volume</th>
-                            <th class="px-6 py-4 font-normal text-right">Prix</th>
-                            <th class="px-6 py-4 font-normal w-16"></th>
-                        </tr>
-                    </thead>
-                    <tbody class="text-sm divide-y divide-zinc-800">
-                        {% for pump in data.confirmed %}
-                        <tr class="pump-row hover:bg-zinc-800/50 {% if pump.change_1h > 25 %}strong-pump{% endif %}" data-symbol="{{ pump.symbol }}" data-type="confirmed">
-                            <td class="px-4 py-4">
-                                <i class="fas fa-star star text-zinc-600 hover:text-amber-400 cursor-pointer" onclick="toggleFavorite('{{ pump.symbol }}', this)"></i>
-                            </td>
-                            <td class="px-6 py-4 font-mono font-semibold">{{ pump.symbol }}</td>
-                            <td class="px-6 py-4 text-right">
-                                <span class="px-3.5 py-1 rounded-2xl text-xs font-semibold {% if pump.change_1h > 25 %}bg-emerald-500 text-white{% else %}bg-emerald-500/10 text-emerald-400{% endif %}">+{{ pump.change_1h }}%</span>
-                            </td>
-                            <td class="px-6 py-4 text-right font-mono text-zinc-300">${{ "{:,}".format(pump.volume|int) }}</td>
-                            <td class="px-6 py-4 text-right font-mono text-zinc-300">{{ pump.price }}</td>
-                            <td class="px-6 py-4">
-                                <a href="https://www.binance.com/en/trade/{{ pump.symbol }}?layout=pro" target="_blank" class="text-zinc-400 hover:text-white transition-colors">
-                                    <i class="fas fa-external-link-alt"></i>
-                                </a>
-                            </td>
-                        </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
-                {% else %}
-                <div class="px-6 py-9 text-center text-zinc-400 text-sm">Aucun pump confirmé pour le moment</div>
-                {% endif %}
+                
+                <div class="bg-zinc-900 border border-zinc-800 rounded-3xl overflow-hidden" id="confirmed-container"></div>
             </div>
         </div>
 
-        <div class="mt-6 text-center text-[10px] text-zinc-500">
-            Appuie sur <span class="font-mono bg-zinc-900 px-1.5 py-0.5 rounded">R</span> pour rafraîchir • Données Binance
+        <!-- Tab Bot (Strategy) -->
+        <div id="bot-tab" class="hidden">
+            <div class="bg-gradient-to-br from-zinc-900 to-zinc-950 rounded-3xl border border-zinc-800 p-8">
+                <div class="text-center mb-8">
+                    <i class="fas fa-robot text-5xl text-emerald-400 mb-4"></i>
+                    <h2 class="text-2xl font-bold mb-2">Strategy Bot</h2>
+                    <p class="text-zinc-400">Stratégies de trading automatisées basées sur les détections</p>
+                </div>
+                
+                <div class="grid md:grid-cols-2 gap-6">
+                    <div class="bg-black/30 rounded-2xl p-6 border border-zinc-800">
+                        <div class="flex items-center gap-3 mb-4">
+                            <div class="w-10 h-10 bg-amber-500/20 rounded-xl flex items-center justify-center">
+                                <i class="fas fa-clock text-amber-400"></i>
+                            </div>
+                            <div>
+                                <h3 class="font-bold">Early Entry Strategy</h3>
+                                <p class="text-xs text-zinc-500">Détection précoce des accumulations</p>
+                            </div>
+                        </div>
+                        <ul class="space-y-2 text-sm text-zinc-300">
+                            <li><i class="fas fa-check text-emerald-400 mr-2"></i> Volume > $1M en 15min</li>
+                            <li><i class="fas fa-check text-emerald-400 mr-2"></i> Hausse modérée (0-3%)</li>
+                            <li><i class="fas fa-check text-emerald-400 mr-2"></i> Spike de volume > 150%</li>
+                            <li class="text-emerald-400 mt-3">🎯 Position size: 2% du capital</li>
+                            <li class="text-emerald-400">🎯 Stop loss: -3%</li>
+                        </ul>
+                    </div>
+                    
+                    <div class="bg-black/30 rounded-2xl p-6 border border-zinc-800">
+                        <div class="flex items-center gap-3 mb-4">
+                            <div class="w-10 h-10 bg-emerald-500/20 rounded-xl flex items-center justify-center">
+                                <i class="fas fa-chart-line text-emerald-400"></i>
+                            </div>
+                            <div>
+                                <h3 class="font-bold">Breakout Strategy</h3>
+                                <p class="text-xs text-zinc-500">Confirmation de tendance</p>
+                            </div>
+                        </div>
+                        <ul class="space-y-2 text-sm text-zinc-300">
+                            <li><i class="fas fa-check text-emerald-400 mr-2"></i> Hausse > 4% en 1h</li>
+                            <li><i class="fas fa-check text-emerald-400 mr-2"></i> Volume > $2M</li>
+                            <li><i class="fas fa-check text-emerald-400 mr-2"></i> Momentum confirmé</li>
+                            <li class="text-emerald-400 mt-3">🎯 Position size: 3% du capital</li>
+                            <li class="text-emerald-400">🎯 Stop loss: -5%</li>
+                        </ul>
+                    </div>
+                </div>
+                
+                <div class="mt-8 p-4 bg-emerald-500/10 rounded-2xl border border-emerald-500/30">
+                    <div class="flex items-center gap-3">
+                        <i class="fas fa-shield-alt text-emerald-400 text-xl"></i>
+                        <p class="text-xs text-zinc-300">⚠️ Ce bot est un outil d'analyse. Les décisions de trading restent sous votre responsabilité. Testez toujours sur un compte démo d'abord.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="mt-6 text-center text-[10px] text-zinc-500 flex items-center justify-center gap-4">
+            <span><i class="fas fa-keyboard"></i> Appuie sur <span class="font-mono bg-zinc-900 px-1.5 py-0.5 rounded">R</span> pour rafraîchir</span>
+            <span><i class="fas fa-database"></i> Données Binance en temps réel</span>
         </div>
     </div>
 
     <script>
+        let currentData = null;
+        let countdown = 45;
+        let countdownInterval;
+        let currentFilter = 'all';
         let favorites = JSON.parse(localStorage.getItem('pumpFavorites') || '[]');
+        
+        function switchTab(tab) {
+            if (tab === 'screener') {
+                document.getElementById('screener-tab').classList.remove('hidden');
+                document.getElementById('bot-tab').classList.add('hidden');
+                document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
+                document.querySelectorAll('.nav-tab')[0].classList.add('active');
+            } else {
+                document.getElementById('screener-tab').classList.add('hidden');
+                document.getElementById('bot-tab').classList.remove('hidden');
+                document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
+                document.querySelectorAll('.nav-tab')[1].classList.add('active');
+            }
+        }
+        
+        async function loadData() {
+            try {
+                document.getElementById('loading').classList.remove('hidden');
+                
+                const response = await fetch('/api/data');
+                if (!response.ok) throw new Error('Erreur réseau');
+                
+                const data = await response.json();
+                currentData = data;
+                
+                if (data.error) {
+                    console.error('Erreur API:', data.error);
+                    showToast('⚠️ Erreur de connexion Binance', 'error');
+                } else {
+                    updateUI(data);
+                    showToast('✅ Données mises à jour', 'success');
+                }
+            } catch (error) {
+                console.error('Erreur:', error);
+                showToast('❌ Erreur de connexion au serveur', 'error');
+            } finally {
+                document.getElementById('loading').classList.add('hidden');
+            }
+        }
+        
+        function updateUI(data) {
+            // Mise à jour des compteurs
+            document.getElementById('early-count').textContent = data.early?.length || 0;
+            document.getElementById('confirmed-count').textContent = data.confirmed?.length || 0;
+            document.getElementById('pumps-count').textContent = data.pumps_24h?.length || 0;
+            document.getElementById('last-update').textContent = data.last_update || '--:--:--';
+            
+            // Mise à jour des tableaux
+            updateTable('early-container', data.early || [], 'early');
+            updateTable('confirmed-container', data.confirmed || [], 'confirmed');
+            
+            // Re-filtrer si nécessaire
+            filterByType(currentFilter);
+        }
+        
+        function updateTable(containerId, items, type) {
+            const container = document.getElementById(containerId);
+            if (!items || items.length === 0) {
+                container.innerHTML = '<div class="px-6 py-9 text-center text-zinc-400 text-sm"><i class="fas fa-inbox mr-2"></i>Aucun signal pour le moment</div>';
+                return;
+            }
+            
+            const html = `
+                <table class="w-full">
+                    <thead>
+                        <tr class="border-b border-zinc-800 text-xs text-zinc-400">
+                            <th class="px-6 py-4 w-8"></th>
+                            <th class="px-6 py-4 font-normal text-left">Paire</th>
+                            <th class="px-6 py-4 font-normal text-right">Hausse 1h</th>
+                            <th class="px-6 py-4 font-normal text-right">Volume (USDT)</th>
+                            <th class="px-6 py-4 font-normal text-right">Prix</th>
+                            <th class="px-6 py-4 font-normal w-16"></th>
+                        </tr>
+                    </thead>
+                    <tbody class="text-sm divide-y divide-zinc-800">
+                        ${items.map(item => `
+                            <tr class="pump-row fade-in" data-symbol="${item.symbol}" data-type="${type}">
+                                <td class="px-4 py-4">
+                                    <i class="fas fa-star star ${favorites.includes(item.symbol) ? 'text-amber-400' : 'text-zinc-600'}" 
+                                       onclick="toggleFavorite('${item.symbol}', this)"></i>
+                                </td>
+                                <td class="px-6 py-4 font-mono font-semibold">${item.symbol}</td>
+                                <td class="px-6 py-4 text-right">
+                                    <span class="px-3.5 py-1 rounded-2xl text-xs font-semibold ${type === 'early' ? 'bg-amber-500/10 text-amber-400' : 'bg-emerald-500/10 text-emerald-400'}">
+                                        +${item.change_1h}%
+                                    </span>
+                                </td>
+                                <td class="px-6 py-4 text-right font-mono text-zinc-300">
+                                    ${formatNumber(item.volume)}
+                                </td>
+                                <td class="px-6 py-4 text-right font-mono text-zinc-300">
+                                    ${item.price < 1 ? item.price : item.price.toLocaleString()}
+                                </td>
+                                <td class="px-6 py-4">
+                                    <a href="https://www.binance.com/en/trade/${item.symbol}?layout=pro" target="_blank" 
+                                       class="text-zinc-400 hover:text-white transition-colors">
+                                        <i class="fas fa-external-link-alt"></i>
+                                    </a>
+                                </td>
+                            </tr>
+                        `).join('')}
+                    </tbody>
+                </table>
+            `;
+            container.innerHTML = html;
+        }
+        
+        function formatNumber(num) {
+            if (num >= 1000000) return `$${(num / 1000000).toFixed(1)}M`;
+            if (num >= 1000) return `$${(num / 1000).toFixed(1)}K`;
+            return `$${num.toFixed(0)}`;
+        }
         
         function toggleFavorite(symbol, element) {
             if (favorites.includes(symbol)) {
@@ -221,77 +413,98 @@
                 element.classList.remove('text-zinc-600');
             }
             localStorage.setItem('pumpFavorites', JSON.stringify(favorites));
+            showToast(`${favorites.includes(symbol) ? '⭐ Ajouté' : '☆ Retiré'} des favoris`, 'info');
         }
         
-        function updateFavorites() {
-            document.querySelectorAll('.star').forEach(star => {
-                const symbol = star.closest('tr').dataset.symbol;
-                if (favorites.includes(symbol)) {
-                    star.classList.add('text-amber-400');
-                    star.classList.remove('text-zinc-600');
-                }
-            });
-        }
-        
-        let countdown = 45;
-        const countdownEl = document.getElementById('countdown');
-        
-        function startCountdown() {
-            const interval = setInterval(() => {
-                countdown--;
-                if (countdownEl) countdownEl.textContent = countdown;
-                if (countdown <= 0) {
-                    clearInterval(interval);
-                    window.location.reload();
-                }
-            }, 1000);
+        function showToast(message, type = 'info') {
+            const toast = document.createElement('div');
+            toast.className = 'toast';
+            toast.innerHTML = `
+                <div class="flex items-center gap-2">
+                    <i class="fas ${type === 'success' ? 'fa-check-circle text-emerald-400' : type === 'error' ? 'fa-exclamation-circle text-red-400' : 'fa-info-circle text-blue-400'}"></i>
+                    <span class="text-sm">${message}</span>
+                </div>
+            `;
+            document.body.appendChild(toast);
+            setTimeout(() => toast.remove(), 3000);
         }
         
         function refreshData() {
-            window.location.reload();
+            loadData();
+            resetCountdown();
+        }
+        
+        function resetCountdown() {
+            countdown = 45;
+            if (countdownInterval) clearInterval(countdownInterval);
+            startCountdown();
+        }
+        
+        function startCountdown() {
+            countdownInterval = setInterval(() => {
+                countdown--;
+                document.getElementById('countdown').textContent = countdown;
+                if (countdown <= 0) {
+                    clearInterval(countdownInterval);
+                    refreshData();
+                }
+            }, 1000);
         }
         
         function filterPairs() {
             const term = document.getElementById('search-input').value.toUpperCase().trim();
             document.querySelectorAll('.pump-row').forEach(row => {
                 const symbol = row.dataset.symbol || '';
-                if (symbol.toUpperCase().includes(term)) {
-                    row.style.display = '';
-                } else {
-                    row.style.display = 'none';
-                }
+                row.style.display = symbol.toUpperCase().includes(term) ? '' : 'none';
             });
         }
         
-        let currentFilter = 'all';
         function filterByType(type) {
             currentFilter = type;
-            document.querySelectorAll('[id^="filter-"]').forEach(b => b.classList.remove('bg-white', 'text-black'));
+            const earlySection = document.getElementById('early-section');
+            const confirmedSection = document.getElementById('confirmed-section');
+            
+            document.querySelectorAll('[id^="filter-"]').forEach(b => {
+                b.classList.remove('bg-white', 'text-black');
+            });
             const btn = document.getElementById('filter-' + type);
             if (btn) btn.classList.add('bg-white', 'text-black');
             
-            const early = document.getElementById('early-section');
-            const confirmed = document.getElementById('confirmed-section');
-            
-            if (type === 'all') { early.style.display = ''; confirmed.style.display = ''; }
-            else if (type === 'early') { early.style.display = ''; confirmed.style.display = 'none'; }
-            else if (type === 'confirmed') { early.style.display = 'none'; confirmed.style.display = ''; }
+            if (type === 'all') {
+                earlySection.style.display = '';
+                confirmedSection.style.display = '';
+            } else if (type === 'early') {
+                earlySection.style.display = '';
+                confirmedSection.style.display = 'none';
+            } else if (type === 'confirmed') {
+                earlySection.style.display = 'none';
+                confirmedSection.style.display = '';
+            }
         }
         
-        window.onload = function() {
-            startCountdown();
-            updateFavorites();
-            
-            const allBtn = document.getElementById('filter-all');
-            if (allBtn) allBtn.classList.add('bg-white', 'text-black');
-            
-            document.addEventListener('keydown', e => {
-                if ((e.key === 'r' || e.key === 'R') && document.activeElement.tagName !== 'INPUT') {
-                    e.preventDefault();
-                    refreshData();
-                }
-            });
-        };
+        // Event listeners
+        document.getElementById('search-input').addEventListener('keyup', filterPairs);
+        document.addEventListener('keydown', (e) => {
+            if ((e.key === 'r' || e.key === 'R') && document.activeElement.tagName !== 'INPUT') {
+                e.preventDefault();
+                refreshData();
+            }
+        });
+        
+        // Initialisation
+        loadData();
+        startCountdown();
+        setInterval(() => {
+            if (countdown > 30 && currentData) {
+                // Refresh silencieux en arrière-plan
+                fetch('/api/data').then(r => r.json()).then(data => {
+                    if (data && data.last_update !== currentData?.last_update) {
+                        updateUI(data);
+                        currentData = data;
+                    }
+                }).catch(console.error);
+            }
+        }, 10000);
     </script>
 </body>
 </html>

@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>StrategyBot • Academic Paper Trading</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.plot.ly/plotly-2.35.2.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500&family=Space+Grotesk:wght@500;600&display=swap');
+        body { font-family: 'Inter', system_ui, sans-serif; }
+        .font-display { font-family: 'Space Grotesk', 'Inter', sans-serif; }
+        .academic-card { background: #0f172a; border: 1px solid #334155; }
+        .metric-value { font-variant-numeric: tabular-nums; }
+    </style>
+</head>
+<body class="bg-slate-950 text-slate-200">
+    <nav class="border-b border-slate-800 bg-slate-950/80 backdrop-blur sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-8 py-5 flex items-center justify-between">
+            <div class="flex items-center gap-x-4">
+                <div class="w-10 h-10 bg-gradient-to-br from-cyan-400 to-violet-500 rounded-2xl flex items-center justify-center">
+                    <i class="fas fa-robot text-white text-2xl"></i>
+                </div>
+                <div>
+                    <span class="font-display text-3xl font-semibold tracking-tighter">StrategyBot</span>
+                    <span class="text-xs px-2 py-0.5 bg-slate-800 rounded-full text-cyan-400 ml-2">ACADEMIC v1.0</span>
+                </div>
+            </div>
+            <div class="flex items-center gap-x-3 text-sm">
+                <div class="px-4 py-1.5 bg-slate-900 rounded-3xl flex items-center gap-x-2">
+                    <div class="w-2 h-2 bg-emerald-400 rounded-full animate-pulse"></div>
+                    <span class="text-emerald-400 font-medium">LIVE BINANCE DATA</span>
+                </div>
+                <div>Balance démo: <span id="nav-balance" class="font-mono text-white font-semibold">$10,000.00</span></div>
+            </div>
+        </div>
+    </nav>
+
+    <div class="max-w-7xl mx-auto px-8 py-8">
+        <div class="flex justify-between items-end mb-8">
+            <div>
+                <h1 class="font-display text-5xl font-semibold tracking-tighter">Robot Testeur de Stratégies</h1>
+                <p class="text-xl text-slate-400 mt-1">Données réelles • Paper Trading • Analyse académique des corrélations</p>
+            </div>
+        </div>
+
+        <div class="grid grid-cols-12 gap-6">
+            <!-- Input Panel -->
+            <div class="col-span-12 lg:col-span-5 academic-card rounded-3xl p-8">
+                <div class="flex items-center gap-x-3 mb-6">
+                    <i class="fas fa-search-dollar text-3xl text-cyan-400"></i>
+                    <h2 class="text-2xl font-semibold">Proposer une Paire USDC</h2>
+                </div>
+                
+                <div class="mb-4">
+                    <label class="text-sm text-slate-400">Paire (ex: PEPEUSDC, BONKUSDC, NEWCOINUSDC)</label>
+                    <div class="flex mt-2 gap-3">
+                        <input id="pair-input" type="text" value="PEPEUSDC" class="flex-1 bg-slate-900 border border-slate-700 focus:border-cyan-400 rounded-2xl px-5 py-3.5 text-lg font-mono">
+                        <button onclick="analyzePair()" class="px-8 bg-white hover:bg-cyan-300 transition-all text-slate-950 font-bold rounded-2xl flex items-center gap-x-2">
+                            <i class="fas fa-magic"></i>
+                            <span>Analyser</span>
+                        </button>
+                    </div>
+                </div>
+
+                <div id="analysis-results" class="hidden mt-6 border-t border-slate-700 pt-6">
+                    <div class="flex justify-between">
+                        <div>
+                            <div id="symbol-name" class="font-mono text-4xl font-bold"></div>
+                            <div id="price" class="text-5xl font-semibold mt-1 text-white"></div>
+                        </div>
+                        <div id="recommendation-badge" class="self-start px-6 py-2 rounded-2xl font-bold flex items-center gap-x-2 text-lg"></div>
+                    </div>
+
+                    <div class="grid grid-cols-3 gap-4 mt-6 text-center">
+                        <div class="bg-slate-900 rounded-2xl p-4">
+                            <div class="text-xs text-slate-400">1H CHANGE</div>
+                            <div id="change-1h" class="text-3xl font-mono font-semibold mt-1"></div>
+                        </div>
+                        <div class="bg-slate-900 rounded-2xl p-4">
+                            <div class="text-xs text-slate-400">VOLUME SPIKE</div>
+                            <div id="volume-spike" class="text-3xl font-mono font-semibold mt-1"></div>
+                        </div>
+                        <div class="bg-slate-900 rounded-2xl p-4">
+                            <div class="text-xs text-slate-400">RSI</div>
+                            <div id="rsi-value" class="text-3xl font-mono font-semibold mt-1"></div>
+                        </div>
+                    </div>
+
+                    <div class="mt-6">
+                        <div class="text-xs text-slate-400 mb-3">RAISONS STRATÉGIQUES (Analyse Académique)</div>
+                        <div id="reasons-list" class="space-y-2.5 text-sm"></div>
+                    </div>
+
+                    <div class="flex gap-3 mt-7">
+                        <button onclick="executeTrade('LONG')" class="flex-1 py-4 bg-emerald-500 hover:bg-emerald-600 rounded-2xl font-bold flex items-center justify-center gap-x-2 text-lg transition-all">
+                            <i class="fas fa-arrow-trend-up"></i> <span>LONG</span>
+                        </button>
+                        <button onclick="executeTrade('SHORT')" class="flex-1 py-4 bg-red-500 hover:bg-red-600 rounded-2xl font-bold flex items-center justify-center gap-x-2 text-lg transition-all">
+                            <i class="fas fa-arrow-trend-down"></i> <span>SHORT</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Chart -->
+            <div class="col-span-12 lg:col-span-7 academic-card rounded-3xl p-8">
+                <div class="flex justify-between mb-4">
+                    <div class="font-semibold text-xl">Graphique 5m + Indicateurs</div>
+                    <div class="text-xs bg-slate-800 px-3 py-1 rounded-full">Données Binance Live</div>
+                </div>
+                <div id="price-chart" style="height: 380px;"></div>
+            </div>
+
+            <!-- Bottom panels -->
+            <div class="col-span-12 lg:col-span-6 academic-card rounded-3xl p-8">
+                <div class="flex items-center gap-x-3 mb-6">
+                    <i class="fas fa-wallet text-violet-400 text-2xl"></i>
+                    <h3 class="text-xl font-semibold">Paper Trading Live</h3>
+                </div>
+                <div class="space-y-4 text-sm">
+                    <div class="flex justify-between"><span class="text-slate-400">Position ouverte</span> <span id="open-position" class="font-mono">Aucune</span></div>
+                    <div class="flex justify-between"><span class="text-slate-400">P&L Réalisé</span> <span id="realized-pnl" class="font-mono text-emerald-400">+$0.00</span></div>
+                    <div class="flex justify-between text-lg"><span class="text-slate-400">Balance</span> <span id="current-balance" class="font-mono font-bold">$10,000.00</span></div>
+                </div>
+                <button onclick="closeAllPositions()" class="mt-6 w-full py-3.5 bg-slate-800 hover:bg-slate-700 rounded-2xl text-sm font-medium">Fermer toutes les positions</button>
+            </div>
+
+            <div class="col-span-12 lg:col-span-6 academic-card rounded-3xl p-8">
+                <div class="flex items-center gap-x-3 mb-5">
+                    <i class="fas fa-project-diagram text-amber-400 text-2xl"></i>
+                    <h3 class="text-xl font-semibold">Corrélation BTC / ETH</h3>
+                </div>
+                <div id="correlation-heatmap" style="height: 220px;"></div>
+                <div class="text-center text-[10px] text-slate-500 mt-2">Faible corrélation = meilleure opportunité indépendante</div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let currentAnalysis = null;
+        let chartInstance = null;
+
+        function analyzePair() {
+            const pair = document.getElementById('pair-input').value.toUpperCase();
+            fetch('/api/analyze', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({symbol: pair})
+            })
+            .then(r => r.json())
+            .then(data => {
+                if (data.error) { alert(data.error); return; }
+                currentAnalysis = data;
+                showAnalysis(data);
+                drawCandlestick(data.ohlcv);
+                drawHeatmap(data.correlation_btc);
+            });
+        }
+
+        function showAnalysis(data) {
+            document.getElementById('analysis-results').classList.remove('hidden');
+            document.getElementById('symbol-name').innerText = data.symbol;
+            document.getElementById('price').innerText = '$' + data.price;
+            
+            const ch = document.getElementById('change-1h');
+            ch.innerText = (data.change_1h > 0 ? '+' : '') + data.change_1h + '%';
+            ch.style.color = data.change_1h > 0 ? '#10b981' : '#ef4444';
+
+            document.getElementById('volume-spike').innerText = data.volume_spike + 'x';
+            document.getElementById('rsi-value').innerText = data.rsi;
+
+            const badge = document.getElementById('recommendation-badge');
+            badge.innerHTML = `<i class="fas fa-${data.recommendation === 'LONG' ? 'arrow-up' : 'arrow-down'}"></i> ${data.recommendation} <span class="text-xs">(${data.confidence}%)</span>`;
+            badge.className = `px-6 py-2 rounded-2xl font-bold flex items-center gap-x-2 text-lg ${data.recommendation === 'LONG' ? 'bg-emerald-500/20 text-emerald-400' : 'bg-red-500/20 text-red-400'}`;
+
+            const reasons = document.getElementById('reasons-list');
+            reasons.innerHTML = data.reasons.map(r => `<div class="flex gap-2"><i class="fas fa-check text-emerald-400 mt-1"></i><span>${r}</span></div>`).join('');
+        }
+
+        function drawCandlestick(ohlcv) {
+            const trace = {
+                x: ohlcv.map(d => d.timestamp),
+                open: ohlcv.map(d => d.open),
+                high: ohlcv.map(d => d.high),
+                low: ohlcv.map(d => d.low),
+                close: ohlcv.map(d => d.close),
+                type: 'candlestick',
+                increasing: {line: {color: '#10b981'}},
+                decreasing: {line: {color: '#ef4444'}}
+            };
+            const layout = { paper_bgcolor: '#0f172a', plot_bgcolor: '#0f172a', font: {color: '#64748b'}, margin: {t:15,r:15,b:30,l:40}, xaxis: {gridcolor:'#334155'}, yaxis: {gridcolor:'#334155'} };
+            if (chartInstance) Plotly.purge('price-chart');
+            Plotly.newPlot('price-chart', [trace], layout, {responsive:true});
+        }
+
+        function drawHeatmap(corr) {
+            const data = [{
+                z: [[corr, 0.82], [0.82, 1]],
+                x: ['Paire', 'BTC'],
+                y: ['Paire', 'ETH'],
+                type: 'heatmap',
+                colorscale: [[0,'#1e2937'],[0.5,'#64748b'],[1,'#00f5ff']],
+                showscale: false
+            }];
+            Plotly.newPlot('correlation-heatmap', data, {paper_bgcolor:'#0f172a', font:{color:'#64748b'}, margin:{t:5,r:5,b:25,l:35}}, {responsive:true});
+        }
+
+        function executeTrade(side) {
+            if (!currentAnalysis) return;
+            fetch('/api/trade', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({symbol: currentAnalysis.symbol, side: side, amount_usdc: 500, entry_price: currentAnalysis.price})
+            })
+            .then(r => r.json())
+            .then(d => {
+                if (d.success) {
+                    document.getElementById('current-balance').innerText = '$' + d.new_balance;
+                    document.getElementById('nav-balance').innerText = '$' + d.new_balance;
+                    document.getElementById('open-position').innerText = `${side} ${currentAnalysis.symbol}`;
+                    alert(`Trade ${side} exécuté en mode démo !`);
+                }
+            });
+        }
+
+        function closeAllPositions() {
+            fetch('/api/close_all', {method: 'POST'})
+            .then(r => r.json())
+            .then(d => {
+                document.getElementById('current-balance').innerText = '$' + d.new_balance;
+                document.getElementById('nav-balance').innerText = '$' + d.new_balance;
+                document.getElementById('open-position').innerText = 'Aucune';
+                alert('Positions fermées.');
+            });
+        }
+
+        // Auto update balance
+        setInterval(() => {
+            fetch('/api/balance').then(r => r.json()).then(d => {
+                document.getElementById('current-balance').innerText = '$' + d.balance;
+                document.getElementById('nav-balance').innerText = '$' + d.balance;
+            });
+        }, 25000);
+
+        // Demo start
+        window.onload = () => {
+            setTimeout(() => document.getElementById('pair-input').value = 'PEPEUSDC', 600);
+        }
+    </script>
+</body>
+</html>

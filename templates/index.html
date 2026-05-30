@@ -3,42 +3,37 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>🚀 Pump Screener</title>
+    <title>🚀 Pump Screener - Connecté à Binance</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
 </head>
 <body class="bg-zinc-950 text-white">
     <div class="max-w-6xl mx-auto px-6 py-8">
-        <!-- Header -->
-        <div class="flex items-center justify-between mb-8">
+        <!-- Connection Status -->
+        <div class="flex items-center justify-between mb-6">
             <div class="flex items-center gap-x-3">
-                <div class="w-10 h-10 bg-emerald-500 rounded-2xl flex items-center justify-center">
-                    <i class="fas fa-rocket text-white text-2xl"></i>
+                <div class="flex items-center gap-x-2 px-4 py-2 bg-emerald-500/10 text-emerald-400 rounded-3xl text-sm">
+                    <div class="w-2 h-2 bg-emerald-400 rounded-full animate-pulse"></div>
+                    <span class="font-medium">Connecté à l'API Binance</span>
                 </div>
-                <div>
-                    <h1 class="text-3xl font-bold tracking-tighter">Pump Screener</h1>
-                    <p class="text-zinc-400 text-sm">Binance • Early Detection</p>
+                <div class="text-xs text-zinc-500">
+                    Dernière mise à jour : <span class="font-mono text-emerald-400">{{ data.last_update }}</span>
                 </div>
             </div>
-            <button onclick="refreshData()" class="px-4 py-2 bg-zinc-800 hover:bg-zinc-700 rounded-2xl text-sm flex items-center gap-x-2 transition-colors">
+            <button onclick="refreshData()" class="text-xs px-4 py-2 bg-zinc-800 hover:bg-zinc-700 rounded-2xl flex items-center gap-x-2 transition-colors">
                 <i class="fas fa-sync-alt"></i>
                 <span>Refresh</span>
             </button>
         </div>
 
-        <!-- Stats -->
-        <div class="grid grid-cols-3 gap-4 mb-8">
-            <div class="bg-zinc-900 border border-zinc-800 rounded-3xl p-5">
-                <div class="text-zinc-400 text-sm mb-1">Early Signals</div>
-                <div class="text-4xl font-semibold text-amber-400">{{ data.early|length }}</div>
+        <!-- Header -->
+        <div class="flex items-center gap-x-4 mb-8">
+            <div class="w-12 h-12 bg-gradient-to-br from-emerald-500 to-teal-400 rounded-2xl flex items-center justify-center shadow-xl shadow-emerald-500/40">
+                <i class="fas fa-rocket text-white text-2xl"></i>
             </div>
-            <div class="bg-zinc-900 border border-zinc-800 rounded-3xl p-5">
-                <div class="text-zinc-400 text-sm mb-1">Confirmed Pumps</div>
-                <div class="text-4xl font-semibold text-emerald-400">{{ data.confirmed|length }}</div>
-            </div>
-            <div class="bg-zinc-900 border border-zinc-800 rounded-3xl p-5">
-                <div class="text-zinc-400 text-sm mb-1">Today's Big Movers</div>
-                <div class="text-4xl font-semibold text-blue-400">{{ data.today_big|length }}</div>
+            <div>
+                <h1 class="text-4xl font-bold tracking-[-2px]">Pump Screener</h1>
+                <p class="text-zinc-400 -mt-1">Binance • Early Detection</p>
             </div>
         </div>
 
@@ -48,6 +43,7 @@
             <div class="flex items-center gap-x-2 mb-3">
                 <span class="text-blue-400">●</span>
                 <span class="font-semibold">TODAY'S BIG MOVERS (24h)</span>
+                <span class="text-xs text-zinc-500">({{ data.today_big|length }} paires)</span>
             </div>
             <div class="bg-zinc-900 border border-zinc-800 rounded-3xl overflow-hidden">
                 <table class="w-full">
@@ -120,7 +116,7 @@
             </div>
         </div>
 
-        <!-- Confirmed Pumps (with Analyser button) -->
+        <!-- Confirmed Pumps -->
         <div id="confirmed-section">
             <div class="flex items-center gap-x-2 mb-3">
                 <span class="text-emerald-400">●</span>
@@ -135,7 +131,7 @@
                             <th class="px-6 py-4 font-normal text-right">Hausse</th>
                             <th class="px-6 py-4 font-normal text-right">Volume</th>
                             <th class="px-6 py-4 font-normal text-right">Prix</th>
-                            <th class="px-6 py-4 font-normal w-20"></th>
+                            <th class="px-6 py-4 font-normal w-16"></th>
                         </tr>
                     </thead>
                     <tbody class="text-sm divide-y divide-zinc-800">
@@ -147,12 +143,8 @@
                             </td>
                             <td class="px-6 py-4 text-right font-mono text-zinc-300">${{ "{:,}".format(pump.volume|int) }}</td>
                             <td class="px-6 py-4 text-right font-mono text-zinc-300">{{ pump.price }}</td>
-                            <td class="px-6 py-4 flex items-center gap-x-2">
+                            <td class="px-6 py-4">
                                 <a href="https://www.binance.com/en/trade/{{ pump.symbol }}?layout=pro" target="_blank" class="text-xs px-3 py-1.5 bg-white text-black rounded-2xl">Trade</a>
-                                <button onclick="showAnalyserModal('{{ pump.symbol }}', {{ pump.change_1h }}, {{ pump.volume }}, {{ pump.price }})" 
-                                        class="text-xs px-3 py-1.5 bg-emerald-500 hover:bg-emerald-600 text-white rounded-2xl transition-colors">
-                                    Analyser
-                                </button>
                             </td>
                         </tr>
                         {% endfor %}
@@ -165,86 +157,32 @@
         </div>
 
         <div class="mt-6 text-center text-xs text-zinc-500">
-            Auto-refresh 45s • Données Binance
-        </div>
-    </div>
-
-    <!-- Analyser Modal -->
-    <div id="analyser-modal" onclick="if (event.target.id === 'analyser-modal') hideAnalyserModal()" class="hidden fixed inset-0 bg-black/70 flex items-center justify-center z-50">
-        <div onclick="event.stopImmediatePropagation()" class="bg-zinc-900 border border-zinc-700 rounded-3xl w-full max-w-lg mx-4 overflow-hidden">
-            <!-- Modal Header -->
-            <div class="px-6 py-4 border-b border-zinc-700 flex items-center justify-between">
-                <div>
-                    <span class="font-mono text-lg font-semibold" id="modal-symbol"></span>
-                    <span class="ml-2 text-emerald-400" id="modal-change"></span>
-                </div>
-                <button onclick="hideAnalyserModal()" class="text-zinc-400 hover:text-white">
-                    <i class="fas fa-times text-xl"></i>
-                </button>
-            </div>
-            
-            <!-- Modal Body -->
-            <div class="p-6 space-y-5">
-                <div class="grid grid-cols-2 gap-4">
-                    <div class="bg-zinc-800 rounded-2xl p-4">
-                        <div class="text-xs text-zinc-400 mb-1">Volume 24h</div>
-                        <div class="text-xl font-semibold" id="modal-volume"></div>
-                    </div>
-                    <div class="bg-zinc-800 rounded-2xl p-4">
-                        <div class="text-xs text-zinc-400 mb-1">Prix actuel</div>
-                        <div class="text-xl font-semibold" id="modal-price"></div>
-                    </div>
-                </div>
-                
-                <div>
-                    <div class="text-sm font-medium mb-2">Notes personnelles</div>
-                    <textarea id="modal-notes" rows="4" class="w-full bg-zinc-800 border border-zinc-700 rounded-2xl p-3 text-sm resize-none focus:outline-none focus:border-emerald-500" placeholder="Ex: Pump après tweet de CZ + volume x12..."></textarea>
-                </div>
-            </div>
-            
-            <!-- Modal Footer -->
-            <div class="px-6 py-4 border-t border-zinc-700 flex justify-end gap-x-3">
-                <button onclick="hideAnalyserModal()" class="px-5 py-2 text-sm hover:bg-zinc-800 rounded-2xl transition-colors">Fermer</button>
-                <button onclick="saveNotes()" class="px-5 py-2 bg-emerald-500 hover:bg-emerald-600 text-sm rounded-2xl transition-colors">Sauvegarder les notes</button>
-            </div>
+            Auto-refresh toutes les <span id="countdown">45</span> secondes • Données Binance en temps réel
         </div>
     </div>
 
     <script>
-        let currentSymbol = '';
-        
-        function showAnalyserModal(symbol, change, volume, price) {
-            currentSymbol = symbol;
-            document.getElementById('modal-symbol').textContent = symbol;
-            document.getElementById('modal-change').textContent = '+' + change + '%';
-            document.getElementById('modal-volume').textContent = '$' + volume.toLocaleString();
-            document.getElementById('modal-price').textContent = price;
-            
-            // Load saved notes if any
-            const savedNotes = localStorage.getItem('notes_' + symbol) || '';
-            document.getElementById('modal-notes').value = savedNotes;
-            
-            document.getElementById('analyser-modal').classList.remove('hidden');
-            document.getElementById('analyser-modal').classList.add('flex');
-        }
-        
-        function hideAnalyserModal() {
-            document.getElementById('analyser-modal').classList.remove('flex');
-            document.getElementById('analyser-modal').classList.add('hidden');
-        }
-        
-        function saveNotes() {
-            const notes = document.getElementById('modal-notes').value;
-            localStorage.setItem('notes_' + currentSymbol, notes);
-            alert('Notes sauvegardées pour ' + currentSymbol);
-            hideAnalyserModal();
-        }
-        
         function refreshData() {
             window.location.reload();
         }
         
-        setTimeout(() => window.location.reload(), 45000);
+        let countdown = 45;
+        const countdownEl = document.getElementById('countdown');
+        
+        function startCountdown() {
+            const interval = setInterval(() => {
+                countdown--;
+                if (countdownEl) countdownEl.textContent = countdown;
+                if (countdown <= 0) {
+                    clearInterval(interval);
+                    window.location.reload();
+                }
+            }, 1000);
+        }
+        
+        window.onload = function() {
+            startCountdown();
+        };
     </script>
 </body>
 </html>

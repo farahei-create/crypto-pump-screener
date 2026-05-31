@@ -53,14 +53,28 @@ def strategy_bot_page():
 @app.route('/dex')
 def dex_screener():
     try:
-        # Focus on USDC pairs on DEX (memecoins & low-caps)
+        # Meilleure requête : on cherche spécifiquement les paires USDC
         url = "https://api.dexscreener.com/latest/dex/search/?q=USDC"
-        response = requests.get(url, timeout=10)
+        response = requests.get(url, timeout=12)
         data = response.json()
-        pairs = data.get('pairs', [])[:30]  # Top 30 USDC pairs
-        return render_template('dex.html', pairs=pairs)
+        
+        all_pairs = data.get('pairs', [])
+        
+        # Filtre strict : seulement les paires dont le quote est USDC
+        usdc_pairs = []
+        for p in all_pairs:
+            if p.get('quoteToken', {}).get('symbol') == 'USDC':
+                usdc_pairs.append(p)
+        
+        # Si rien trouvé, on prend les premiers résultats quand même
+        if not usdc_pairs:
+            usdc_pairs = all_pairs[:20]
+        
+        return render_template('dex.html', pairs=usdc_pairs)
+    
     except Exception as e:
-        return render_template('dex.html', pairs=[], error=str(e))
+        print("DEX Screener error:", e)
+        return render_template('dex.html', pairs=[])
 
 @app.route('/api/analyze', methods=['POST'])
 def analyze_pair():

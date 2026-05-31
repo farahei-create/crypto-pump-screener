@@ -5,12 +5,11 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-# Load config
+# Load config (on garde tes variables de config.py)
 from config import *
 
+# Version PUBLIQUE (sans clé API)
 exchange = ccxt.binance({
-    'apiKey': os.getenv('BINANCE_API_KEY', ''),
-    'secret': os.getenv('BINANCE_SECRET', ''),
     'enableRateLimit': True,
 })
 
@@ -23,7 +22,6 @@ def get_potential_pumps():
             change_1h = ticker.get('percentage', 0) or 0
             volume = ticker.get('quoteVolume', 0) or 0
             
-            # Core filters for sudden pumps
             if (change_1h >= MIN_PRICE_CHANGE_1H and 
                 volume > MIN_LIQUIDITY):
                 
@@ -34,7 +32,6 @@ def get_potential_pumps():
                     'price': ticker['last']
                 })
     
-    # Sort by momentum
     pumps = sorted(pumps, key=lambda x: x['change_1h'], reverse=True)[:MAX_RESULTS]
     return pumps
 
@@ -47,7 +44,7 @@ def send_telegram_alert(message):
         print(f"Telegram error: {e}")
 
 def main():
-    print("\u1f680 Crypto Pump Screener started...")
+    print("🚀 Crypto Pump Screener started (PUBLIC MODE)...")
     print(f"Scanning every {SCAN_INTERVAL} seconds...\n")
     
     while True:
@@ -55,12 +52,12 @@ def main():
             pumps = get_potential_pumps()
             
             if pumps:
-                print("\n\u1f4c8 Top Pump Candidates:")
+                print("\n📈 Top Pump Candidates:")
                 for p in pumps:
                     print(f"{p['symbol']}: +{p['change_1h']}% | Vol: ${p['volume']:,.0f}")
                 
                 if TELEGRAM_BOT_TOKEN and TELEGRAM_CHAT_ID:
-                    msg = "\u1f4c8 Pump Alert:\n" + "\n".join([f"{p['symbol']}: +{p['change_1h']}%" for p in pumps[:5]])
+                    msg = "📈 Pump Alert:\n" + "\n".join([f"{p['symbol']}: +{p['change_1h']}%" for p in pumps[:5]])
                     send_telegram_alert(msg)
             
             time.sleep(SCAN_INTERVAL)
